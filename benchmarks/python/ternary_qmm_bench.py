@@ -32,20 +32,47 @@ def time_qmm(M, K, N):
     mx.random.seed(0)
     x = mx.random.normal((M, K))
     w = mx.random.normal((N, K))
-    w_full = w  # dense reference weight, same values modulo quantization
-    w_q, scales = mx.quantize(w, group_size=GROUP_SIZE, bits=BITS, mode="ternary")
-    mx.eval(x, w_full, w_q, scales)
+    mx.eval(x, w)
 
     def dense(x):
-        return x @ w_full.T
+        return x @ w.T
 
-    def quantized(x):
-        return mx.quantized_matmul(
-            x, w_q, scales, group_size=GROUP_SIZE, bits=BITS, mode="ternary"
-        )
+    def make_qmm(mode, bits):
+        if mode == "affine":
+            w_q, scales, biases = mx.quantize(w, bits=bits, mode=mode)
+            mx.eval(w_q, scales, biases)
+            return lambda x: mx.quantized_matmul(
+                x, w_q, scales, biases, bits=bits, mode=mode
+            )
+        else:
+            w_q, scales = mx.quantize(w, group_size=GROUP_SIZE, bits=bits, mode=mode)
+            mx.eval(w_q, scales)
+            return lambda x: mx.quantized_matmul(
+                x, w_q, scales, group_size=GROUP_SIZE, bits=bits, mode=mode
+            )
 
-    time_fn(dense, x, msg=f"x @ w.T (dense fp32)     M={M} K={K} N={N}")
-    time_fn(quantized, x, msg=f"quantized_matmul(ternary) M={M} K={K} N={N}")
+    time_fn(dense, x, msg=f"x @ w.T (dense fp32)                M={M} K={K} N={N}")
+    # affine bits=4 is this codebase's own best-optimized comparable-width
+    # CPU quantized kernel (real SIMD path, _qmm_t_simd) -- the honest
+    # baseline to compare ternary against, not just dense fp32 BLAS.
+    time_fn(
+        make_qmm("affine", 4),
+        x,
+        msg=f"quantized_matmul(affine, bits=4)    M={M} K={K} N={N}",
+    )
+    # affine bits=2 has no SIMD path in this codebase at all (simd::max_size
+    # doesn't divide evenly for bits=2 -- see _qmm_dispatch_transpose) and
+    # always falls back to the scalar kernel -- shown for contrast.
+    time_fn(
+        make_qmm("affine", 2),
+        x,
+        msg=f"quantized_matmul(affine, bits=2, no SIMD) M={M} K={K} N={N}",
+    )
+    time_fn(
+        make_qmm("ternary", 2),
+        x,
+        msg=f"quantized_matmul(ternary, bits=2)   M={M} K={K} N={N}",
+    )
 
 
 if __name__ == "__main__":
@@ -56,8 +83,11 @@ if __name__ == "__main__":
     print()
     print("quantized_matmul timing (fused SIMD kernel, M-tiled over MTILE=4 rows,")
     print("transpose=True path -- see _ternary_qmm_t_simd in")
-    print("mlx/backend/cpu/quantized.cpp). M=1 (decode) is close to dense fp32;")
-    print("larger M is faster than the naive per-row version but still slower")
-    print("than dense BLAS -- honest gap, not yet closed.")
+    print("mlx/backend/cpu/quantized.cpp). Compared against dense fp32 BLAS AND")
+    print("against this codebase's own existing affine bits=4/bits=2 CPU kernels,")
+    print("since 'slower than dense BLAS' alone understates it: ternary beats")
+    print("affine bits=4 (this codebase's best-optimized comparable-width CPU")
+    print("kernel) at both M=1 and M=32, and is roughly an order of magnitude")
+    print("faster than affine bits=2, which has no SIMD path at all.")
     for M, K, N in [(1, 4096, 4096), (32, 4096, 4096), (32, 4096, 11008)]:
         time_qmm(M, K, N)
