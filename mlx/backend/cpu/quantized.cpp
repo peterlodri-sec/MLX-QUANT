@@ -4,6 +4,7 @@
 #include "mlx/backend/common/unary.h"
 #include "mlx/backend/cpu/copy.h"
 #include "mlx/backend/cpu/encoder.h"
+#include "mlx/backend/cpu/gemm.h"
 #include "mlx/backend/cpu/simd/simd.h"
 #include "mlx/backend/cpu/unary.h"
 #include "mlx/backend/cpu/unary_ops.h"
@@ -919,6 +920,139 @@ void fp_bs_qmm_dispatch(
   }
 }
 
+// No fused ternary matmul kernel exists yet (the affine/fp families above
+// have hand-tuned SIMD inner loops; this is the correctness-first Stage 1
+// path). Unpack the 2-bit codes into a dense (K, N) buffer -- oriented so a
+// plain, non-transposed multiply is always correct regardless of
+// `transposed_w` -- then hand off to the existing BLAS-backed `matmul<T>`
+// (mlx/backend/cpu/gemm.h) instead of hand-rolling a new GEMM. Fusing the
+// unpack into the inner product loop, the way `_qmm`/`fp_qmm` do, is real
+// follow-on optimization work.
+template <typename T>
+void ternary_unpack_dense(
+    const uint32_t* w,
+    const T* scales,
+    T* dense,
+    int P,
+    int U,
+    int group_size,
+    bool transposed_w) {
+  constexpr int el_per_word = 16; // bits == 2 is the only valid ternary width
+  int n_groups = U / group_size;
+  for (int p = 0; p < P; ++p) {
+    const uint32_t* w_row = w + p * (U / el_per_word);
+    const T* s_row = scales + p * n_groups;
+    for (int u = 0; u < U; ++u) {
+      uint32_t code = (w_row[u / el_per_word] >> ((u % el_per_word) * 2)) & 0x3;
+      T val =
+          static_cast<T>(static_cast<int>(code) - 1) * s_row[u / group_size];
+      // transposed_w means w is stored as (N, K) (nn.Linear convention) --
+      // write into the (K, N) dense buffer transposed so the matmul below
+      // never needs to know about `transposed_w` at all.
+      dense[transposed_w ? (u * P + p) : (p * U + u)] = val;
+    }
+  }
+}
+
+template <typename T>
+void ternary_qmm_dispatch_mode(
+    array& out,
+    const array& x,
+    const array& w,
+    const array& scales,
+    int group_size,
+    bool transposed_w) {
+  int K = x.shape(-1);
+  int M = x.ndim() > 1 ? x.shape(-2) : 1;
+  int N = out.shape(-1);
+  int P = w.shape(-2);
+  int U = w.shape(-1) * 32 / 2; // bits == 2
+  int w_els = w.ndim() > 2 ? w.shape(-1) * w.shape(-2) : 0;
+  int g_els = w.ndim() > 2 ? scales.shape(-1) * scales.shape(-2) : 0;
+  int batch_size = x.size() / (K * M);
+
+  auto out_ptr = out.data<T>();
+  auto x_ptr = x.data<T>();
+  auto w_ptr = w.data<uint32_t>();
+  auto scales_ptr = scales.data<T>();
+
+  std::vector<T> dense(static_cast<size_t>(P) * U);
+  Shape a_shape{M, K};
+  Strides a_strides{K, 1};
+  Shape b_shape{K, N};
+  Strides b_strides{N, 1};
+
+  for (int i = 0; i < batch_size; i++) {
+    ternary_unpack_dense<T>(
+        w_ptr + elem_to_loc(i * w_els, w.shape(), w.strides()),
+        scales_ptr + elem_to_loc(i * g_els, scales.shape(), scales.strides()),
+        dense.data(),
+        P,
+        U,
+        group_size,
+        transposed_w);
+    matmul<T>(
+        x_ptr + elem_to_loc(i * M * K, x.shape(), x.strides()),
+        dense.data(),
+        out_ptr + i * M * N,
+        /* a_transposed= */ false,
+        /* b_transposed= */ false,
+        /* lda= */ K,
+        /* ldb= */ N,
+        /* ldc= */ N,
+        /* alpha= */ 1.0f,
+        /* beta= */ 0.0f,
+        /* batch_size= */ 1,
+        a_shape,
+        a_strides,
+        b_shape,
+        b_strides);
+  }
+}
+
+template <typename T>
+void ternary_qmm_dispatch_typed(
+    array& out,
+    const array& x,
+    const array& w,
+    const array& scales,
+    int group_size,
+    int bits,
+    bool transposed_w) {
+  if (bits != 2) {
+    throw std::invalid_argument(
+        "[quantized_matmul] ternary quantization requires bits to be 2.");
+  }
+  ternary_qmm_dispatch_mode<T>(out, x, w, scales, group_size, transposed_w);
+}
+
+void ternary_qmm_dispatch(
+    array& out,
+    const array& x,
+    const array& w,
+    const array& scales,
+    int group_size,
+    int bits,
+    bool transposed_w) {
+  switch (x.dtype()) {
+    case bfloat16:
+      ternary_qmm_dispatch_typed<bfloat16_t>(
+          out, x, w, scales, group_size, bits, transposed_w);
+      break;
+    case float16:
+      ternary_qmm_dispatch_typed<float16_t>(
+          out, x, w, scales, group_size, bits, transposed_w);
+      break;
+    case float32:
+      ternary_qmm_dispatch_typed<float>(
+          out, x, w, scales, group_size, bits, transposed_w);
+      break;
+    default:
+      throw std::invalid_argument(
+          "[quantized_matmul] only floating types are supported");
+  }
+}
+
 } // namespace
 
 void QuantizedMatmul::eval_cpu(const std::vector<array>& inputs, array& out) {
@@ -950,6 +1084,16 @@ void QuantizedMatmul::eval_cpu(const std::vector<array>& inputs, array& out) {
                       transpose_ = transpose_]() mutable {
       _qmm_dispatch(out, x, w, scales, biases, group_size_, bits_, transpose_);
     });
+  } else if (mode_ == QuantizationMode::Ternary) {
+    encoder.dispatch([out = array::unsafe_weak_copy(out),
+                      x = array::unsafe_weak_copy(x),
+                      w = array::unsafe_weak_copy(w),
+                      scales = array::unsafe_weak_copy(scales),
+                      group_size_ = group_size_,
+                      bits_ = bits_,
+                      transpose_ = transpose_]() mutable {
+      ternary_qmm_dispatch(out, x, w, scales, group_size_, bits_, transpose_);
+    });
   } else {
     encoder.dispatch([out = array::unsafe_weak_copy(out),
                       x = array::unsafe_weak_copy(x),
@@ -964,6 +1108,15 @@ void QuantizedMatmul::eval_cpu(const std::vector<array>& inputs, array& out) {
 }
 
 void GatherQMM::eval_cpu(const std::vector<array>& inputs, array& out) {
+  if (mode_ == QuantizationMode::Ternary) {
+    // Gather-based (MoE, per-token expert weight selection) ternary matmul
+    // is real follow-on work, not Stage 1 scope -- fail loud rather than
+    // silently misdispatching through the fp-family kernel below, which
+    // assumes a different scale/bit-packing contract than ternary's.
+    throw std::runtime_error(
+        "[gather_qmm] ternary quantization is not yet supported for "
+        "gather-based (indexed) quantized matmul.");
+  }
   auto& x_pre = inputs[0];
   auto& w_pre = inputs[1];
   auto& scales_pre = inputs[2];

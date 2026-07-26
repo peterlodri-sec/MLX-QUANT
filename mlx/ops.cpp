@@ -4539,6 +4539,14 @@ std::pair<int, int> quantization_params_from_mode(
       default_group_size = 32;
       default_bits = 8;
       break;
+    case QuantizationMode::Ternary:
+      // BitNet b1.58: values in {-1, 0, +1}, 2 bits/weight (same packed
+      // layout as affine bits=2 -- 16 codes per uint32, LSB-first). Group
+      // size matches affine's own default; unlike affine, one float scale
+      // per group and no bias (ternary is zero-symmetric).
+      default_group_size = 64;
+      default_bits = 2;
+      break;
   }
   return {
       group_size_.has_value() ? *group_size_ : default_group_size,
@@ -4577,6 +4585,29 @@ std::pair<Dtype, QuantizationMode> validate_mode_with_type(
       return {*out_type, qmode};
     } else {
       return {dtype, qmode};
+    }
+  } else if (qmode == QuantizationMode::Ternary) {
+    // Ternary is zero-symmetric: one real floating-point scale per group
+    // (mean(|w|)), no bias -- a third contract, distinct from both affine
+    // (float scale + bias) and the fp family (uint8 microscaling exponent,
+    // no bias). Reusing either existing branch here would silently accept
+    // the wrong scale dtype for this mode.
+    if (biases) {
+      std::ostringstream msg;
+      msg << "[" << tag << "] Biases must be null for ternary quantization.";
+      throw std::invalid_argument(msg.str());
+    }
+    if (!issubdtype(scales.dtype(), floating)) {
+      std::ostringstream msg;
+      msg << "[" << tag
+          << "] Scale type must be a real floating type for ternary "
+          << "quantization but received type " << scales.dtype() << ".";
+      throw std::invalid_argument(msg.str());
+    }
+    if (out_type.has_value()) {
+      return {*out_type, qmode};
+    } else {
+      return {scales.dtype(), qmode};
     }
   } else if (scales.dtype() != uint8) {
     std::ostringstream msg;
@@ -4637,6 +4668,16 @@ array quantized_matmul(
     StreamOrDevice s /* = {} */) {
   auto [dtype, qmode] = validate_mode_with_type(
       "quantized_matmul", scales, biases, std::nullopt, mode);
+
+  if (qmode == QuantizationMode::Ternary &&
+      to_stream(s).device == Device::gpu) {
+    // No verified GPU (Metal/CUDA) kernel path exists for ternary yet --
+    // fail explicitly here rather than relying on unverified emergent
+    // kernel-lookup-failure behavior deeper in the GPU backend.
+    throw std::invalid_argument(
+        "[quantized_matmul] ternary quantization is not yet implemented on "
+        "the GPU (Metal/CUDA); use a CPU stream.");
+  }
 
   auto [group_size, bits] =
       quantization_params_from_mode(qmode, group_size_, bits_);
@@ -4949,6 +4990,154 @@ affine_quantize(const array& w, int group_size, int bits, StreamOrDevice s_) {
       {w});
 }
 
+std::vector<array>
+ternary_quantize(const array& w, int group_size, int bits, StreamOrDevice s_) {
+  auto s = to_stream(s_);
+  if (bits != 2) {
+    std::ostringstream msg;
+    msg << "[quantize] ternary quantization requires bits to be 2 but got "
+        << bits << ".";
+    throw std::invalid_argument(msg.str());
+  }
+
+  auto fallback = [group_size, bits, s](
+                      const std::vector<array>& inputs) -> std::vector<array> {
+    auto& w = inputs[0];
+    auto wshape = w.shape();
+    wshape.back() = -1;
+
+    array packed_w = reshape(w, {-1, w.shape(-1) / group_size, group_size}, s);
+
+    // BitNet b1.58 (arXiv:2402.17764): scale = mean(|W|); code_signed =
+    // RoundClip(W / scale, -1, 1). Genuinely ternary (real zeros for
+    // small-magnitude weights), unlike the sign(w - mean(w)) simplification
+    // used by the pure-MLX-array BitLinear layer in
+    // python/mlx/nn/layers/bitlinear.py -- both implement the same paper,
+    // but they are not numerically identical. This native format is the
+    // one meant for real packed storage / a future fused kernel; the
+    // Python layer is the quantization-aware-*training* simulation.
+    array eps(1e-7, float32);
+    array scales = maximum(
+        mean(
+            abs(astype(packed_w, float32, s), s),
+            /* axis= */ -1,
+            /* keepdims= */ true,
+            s),
+        eps,
+        s);
+
+    array ratio = divide(astype(packed_w, float32, s), scales, s);
+    array code_signed = clip(round(ratio, s), array(-1.0f), array(1.0f), s);
+    array code = astype(add(code_signed, array(1.0f), s), uint32, s); // {0,1,2}
+
+    int el_per_int = 32 / bits;
+    array shifts = power(array(2, uint32), arange(0, 32, bits, uint32, s), s);
+    code = reshape(code, {code.shape(0), -1, el_per_int}, s);
+    array packed =
+        sum(multiply(code, shifts, s), /* axis= */ 2, /* keepdims= */ false, s);
+
+    scales = astype(scales, w.dtype(), s);
+    return {
+        reshape(packed, wshape, s),
+        reshape(scales, wshape, s),
+    };
+  };
+
+  // No CPU or GPU kernel-level primitive exists for this mode yet -- the
+  // eval_cpu side runs the fallback eagerly (see
+  // mlx/backend/cpu/quantized.cpp), and there is no Metal kernel at all.
+  // Unlike fp_quantize's not-yet-bespoke modes (which reuse a real,
+  // already-shipped "fp_" Metal kernel family), ternary's 2-bit layout does
+  // not fit that family's template, so building a fast::Quantize primitive
+  // here and hoping eval_gpu's kernel-name lookup fails loud is not a
+  // verified safety net -- fail explicitly and immediately instead.
+  if (s.device == Device::gpu) {
+    throw std::invalid_argument(
+        "[quantize] ternary quantization is not yet implemented on the GPU "
+        "(Metal/CUDA); use a CPU stream.");
+  }
+  return fallback({w});
+}
+
+array ternary_dequantize(
+    const array& w,
+    const array& scales,
+    int group_size,
+    int bits,
+    StreamOrDevice s_) {
+  if (bits != 2) {
+    std::ostringstream msg;
+    msg << "[dequantize] ternary quantization requires bits to be 2 but got "
+        << bits << ".";
+    throw std::invalid_argument(msg.str());
+  }
+  auto s = to_stream(s_);
+  auto wshape = w.shape();
+  auto sshape = scales.shape();
+  wshape.back() = -1;
+  sshape.back() = -1;
+  if (wshape != sshape) {
+    throw std::invalid_argument(
+        "[dequantize] Shape of scales does not match the matrix");
+  }
+
+  int out_size = w.shape(-1) * 32 / bits;
+  if (out_size != scales.shape(-1) * group_size) {
+    std::ostringstream msg;
+    msg << "[dequantize] Shape of scales does not match the matrix "
+        << "given the quantization parameters. Provided matrix of shape "
+        << w.shape() << " and scales of shape " << scales.shape()
+        << " with group_size=" << group_size << " and bits=" << bits << ".";
+    throw std::invalid_argument(msg.str());
+  }
+
+  auto fallback =
+      [wshape = std::move(wshape),
+       sshape = std::move(sshape),
+       group_size,
+       bits,
+       s](const std::vector<array>& inputs) mutable -> std::vector<array> {
+    auto& w = inputs[0];
+    auto& scales = inputs[1];
+
+    std::vector<array> parts;
+    for (int start = 0; start < 32; start += bits) {
+      parts.push_back(expand_dims(
+          right_shift(
+              left_shift(w, array(32 - (start + bits), uint32), s),
+              array(32 - bits, uint32),
+              s),
+          -1,
+          s));
+    }
+    array unpacked = concatenate(parts, -1, s);
+
+    // code in {0,1,2,3} -> signed {-1,0,1,2}; code 3 is never produced by
+    // ternary_quantize's RoundClip (see above) but a stray/corrupt value
+    // there dequantizes to +2*scale rather than trapping, matching this
+    // codebase's existing preference for saturating over throwing in
+    // numeric kernels.
+    array signed_code = subtract(astype(unpacked, float32, s), array(1.0f), s);
+
+    auto out_shape = wshape;
+    out_shape.push_back(group_size);
+    signed_code = reshape(signed_code, out_shape, s);
+    array out = multiply(signed_code, expand_dims(scales, -1, s), s);
+    out = reshape(out, sshape, s);
+    return {astype(out, scales.dtype(), s)};
+  };
+
+  // Same reasoning as ternary_quantize above: no verified GPU kernel path
+  // exists yet, so fail explicitly rather than relying on unverified
+  // emergent kernel-lookup-failure behavior.
+  if (s.device == Device::gpu) {
+    throw std::invalid_argument(
+        "[dequantize] ternary quantization is not yet implemented on the "
+        "GPU (Metal/CUDA); use a CPU stream.");
+  }
+  return fallback({w, scales})[0];
+}
+
 std::vector<array> fp_quantize(
     const array& w,
     int group_size,
@@ -5097,6 +5286,8 @@ std::vector<array> quantize(
   validate_global_scale("quantize", qmode, global_scale);
   if (qmode == QuantizationMode::Affine) {
     return affine_quantize(w, group_size, bits, s);
+  } else if (qmode == QuantizationMode::Ternary) {
+    return ternary_quantize(w, group_size, bits, s);
   } else {
     return fp_quantize(w, group_size, bits, qmode, global_scale, to_stream(s));
   }
@@ -5367,6 +5558,9 @@ array dequantize(
         affine_dequantize(w, scales, *biases, group_size, bits, s),
         out_type,
         s);
+  } else if (qmode == QuantizationMode::Ternary) {
+    return astype(
+        ternary_dequantize(w, scales, group_size, bits, s), out_type, s);
   } else {
     return fp_dequantize(
         w,
@@ -5434,6 +5628,14 @@ array gather_qmm(
 
   auto [out_type, qmode] =
       validate_mode_with_type("gather_qmm", scales, biases, std::nullopt, mode);
+  if (qmode == QuantizationMode::Ternary) {
+    // Gather-based (MoE, per-token expert weight selection) ternary matmul
+    // is real follow-on work, not Stage 1 scope, on both CPU and GPU -- see
+    // the matching CPU-side throw in GatherQMM::eval_cpu.
+    throw std::invalid_argument(
+        "[gather_qmm] ternary quantization is not yet supported for "
+        "gather-based (indexed) quantized matmul.");
+  }
   auto [group_size, bits] =
       quantization_params_from_mode(qmode, group_size_, bits_);
   auto [w_inner_dims, w_outer_dims] = extract_quantized_matmul_dims(

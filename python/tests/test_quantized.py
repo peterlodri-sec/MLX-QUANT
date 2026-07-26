@@ -173,6 +173,130 @@ class TestQuantized(mlx_tests.MLXTestCase):
         )
         self.assertTrue(mx.allclose(w, w_hat, rtol=1e-5, atol=1e-5))
 
+    def ternary_round_clip_reference(self, w, group_size):
+        # BitNet b1.58 (arXiv:2402.17764): scale = mean(|w|) per group,
+        # code = RoundClip(w / scale, -1, 1). Independent re-derivation of
+        # the math ternary_quantize/ternary_dequantize implement, used here
+        # as an oracle rather than re-testing the implementation against
+        # itself.
+        shape = w.shape
+        grouped = w.reshape(-1, shape[-1] // group_size, group_size)
+        scale = mx.maximum(mx.abs(grouped).mean(axis=-1, keepdims=True), 1e-7)
+        code = mx.clip(mx.round(grouped / scale), -1, 1)
+        dequant = (code * scale).reshape(shape)
+        return dequant
+
+    def test_ternary_quantize_dequantize(self):
+        # Stage 1 ternary support is CPU-only -- pin the stream explicitly
+        # so this test is correct regardless of the machine's default
+        # device (e.g. a Metal-enabled build defaults to gpu).
+        with mx.stream(mx.cpu):
+            for shape, gs in [((128, 512), 64), ((32, 256), 32), ((8, 64), 64)]:
+                with self.subTest(shape=shape, gs=gs):
+                    w = mx.random.normal(shape=shape)
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = mx.dequantize(
+                        w_q, scales, group_size=gs, bits=2, mode="ternary"
+                    )
+                    w_ref = self.ternary_round_clip_reference(w, gs)
+                    self.assertTrue(mx.allclose(w_hat, w_ref, atol=1e-6))
+
+            # Invalid bits
+            with self.assertRaises(ValueError):
+                mx.quantize(mx.random.normal(shape=(8, 64)), bits=3, mode="ternary")
+
+            # No biases allowed
+            w_q, scales = mx.quantize(mx.random.normal(shape=(8, 64)), mode="ternary")
+            with self.assertRaises(ValueError):
+                mx.dequantize(
+                    w_q,
+                    scales,
+                    biases=mx.zeros_like(scales),
+                    bits=2,
+                    mode="ternary",
+                )
+
+            # test quantize/dequantize 0s
+            a = mx.zeros((256, 512))
+            w_q, scales = mx.quantize(a, mode="ternary")
+            w_hat = mx.dequantize(w_q, scales, mode="ternary")
+            self.assertTrue(mx.all(w_hat == 0))
+
+            # Packed storage is smaller than the unquantized weight -- the
+            # point of a native (not just simulated) quantization format.
+            w = mx.random.normal(shape=(4096, 4096))
+            w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+            mx.eval(w_q, scales)
+            self.assertLess(w_q.nbytes + scales.nbytes, w.nbytes)
+
+        # The GPU (Metal/CUDA) path is not yet implemented -- it must fail
+        # loud rather than silently misdispatch through the fp-family
+        # kernel, which assumes a different scale/bit-packing contract.
+        if mx.metal.is_available():
+            with self.assertRaises(ValueError):
+                mx.quantize(
+                    mx.random.normal(shape=(8, 64)), mode="ternary", stream=mx.gpu
+                )
+
+    def test_ternary_qmm(self):
+        with mx.stream(mx.cpu):
+            for M, K, N, gs, transpose in [
+                (1, 64, 32, 64, True),
+                (8, 128, 256, 64, True),
+                (5, 256, 17, 64, True),
+                (1, 64, 64, 64, False),
+                (8, 128, 256, 64, False),
+            ]:
+                with self.subTest(M=M, K=K, N=N, gs=gs, transpose=transpose):
+                    x = mx.random.normal(shape=(M, K))
+                    w_shape = (N, K) if transpose else (K, N)
+                    w = mx.random.normal(shape=w_shape)
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
+                        transpose=transpose,
+                    )
+                    y_ref = (x @ w_hat.T) if transpose else (x @ w_hat)
+                    self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+            # Batched activations against a single (unbatched) weight matrix.
+            x = mx.random.normal(shape=(3, 5, 128))
+            w = mx.random.normal(shape=(64, 128))
+            w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+            w_hat = self.ternary_round_clip_reference(w, 64)
+            y_q = mx.quantized_matmul(
+                x, w_q, scales, group_size=64, bits=2, mode="ternary", transpose=True
+            )
+            y_ref = x @ w_hat.T
+            self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+            # Gather-based (MoE) ternary matmul is explicitly out of scope
+            # for now -- it must fail loud, not silently misdispatch
+            # through the fp-family kernel.
+            w = mx.random.normal(shape=(4, 64, 128))
+            w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+            x = mx.random.normal(shape=(2, 128))
+            indices = mx.array([0, 1])
+            with self.assertRaises(Exception):
+                mx.eval(
+                    mx.gather_qmm(
+                        x,
+                        w_q,
+                        scales,
+                        rhs_indices=indices,
+                        group_size=64,
+                        bits=2,
+                        mode="ternary",
+                        transpose=True,
+                    )
+                )
+
     def test_qqmv(self):
         key = mx.random.key(0)
         k1, k2 = mx.random.split(key)

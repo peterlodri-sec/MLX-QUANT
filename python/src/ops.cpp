@@ -4622,7 +4622,13 @@ void init_ops(nb::module_& m) {
           the last dimension divisible by ``group_size``
 
         The supported quantization modes are ``"affine"``, ``"mxfp4"``,
-        ``"mxfp8"``, and ``"nvfp4"``. They are described in more detail below.
+        ``"mxfp8"``, ``"nvfp4"``, and ``"ternary"``. They are described in
+        more detail below.
+
+        .. note::
+
+          ``"ternary"`` is currently only implemented for the CPU backend;
+          it raises on the GPU (Metal/CUDA).
 
         Args:
           w (array): Array to be quantized
