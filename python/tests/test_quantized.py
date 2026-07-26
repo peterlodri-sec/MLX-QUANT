@@ -229,14 +229,22 @@ class TestQuantized(mlx_tests.MLXTestCase):
             mx.eval(w_q, scales)
             self.assertLess(w_q.nbytes + scales.nbytes, w.nbytes)
 
-        # The GPU (Metal/CUDA) path is not yet implemented -- it must fail
-        # loud rather than silently misdispatch through the fp-family
-        # kernel, which assumes a different scale/bit-packing contract.
+        # The GPU (Metal/CUDA) quantize/dequantize path is backed by a real
+        # kernel (mlx/backend/metal/kernels/ternary_quantized.h) -- verify
+        # it round-trips against the same independent reference used above.
         if mx.metal.is_available():
-            with self.assertRaises(ValueError):
-                mx.quantize(
-                    mx.random.normal(shape=(8, 64)), mode="ternary", stream=mx.gpu
-                )
+            with mx.stream(mx.gpu):
+                for shape, gs in [((128, 512), 64), ((32, 256), 32), ((8, 64), 64)]:
+                    with self.subTest(shape=shape, gs=gs, device="gpu"):
+                        w = mx.random.normal(shape=shape)
+                        w_q, scales = mx.quantize(
+                            w, group_size=gs, bits=2, mode="ternary"
+                        )
+                        w_hat = mx.dequantize(
+                            w_q, scales, group_size=gs, bits=2, mode="ternary"
+                        )
+                        w_ref = self.ternary_round_clip_reference(w, gs)
+                        self.assertTrue(mx.allclose(w_hat, w_ref, atol=1e-6))
 
     def test_ternary_qmm(self):
         with mx.stream(mx.cpu):
@@ -296,6 +304,40 @@ class TestQuantized(mlx_tests.MLXTestCase):
                         transpose=True,
                     )
                 )
+
+        # GPU quantized_matmul composes dequantize + dense matmul rather
+        # than a fused kernel (see mlx/ops.cpp) -- verify it still matches
+        # the same independent reference used above.
+        if mx.metal.is_available():
+            with mx.stream(mx.gpu):
+                for M, K, N, gs, transpose in [
+                    (1, 64, 32, 64, True),
+                    (8, 128, 256, 64, True),
+                    (5, 256, 17, 64, True),
+                    (1, 64, 64, 64, False),
+                    (8, 128, 256, 64, False),
+                ]:
+                    with self.subTest(
+                        M=M, K=K, N=N, gs=gs, transpose=transpose, device="gpu"
+                    ):
+                        x = mx.random.normal(shape=(M, K))
+                        w_shape = (N, K) if transpose else (K, N)
+                        w = mx.random.normal(shape=w_shape)
+                        w_q, scales = mx.quantize(
+                            w, group_size=gs, bits=2, mode="ternary"
+                        )
+                        w_hat = self.ternary_round_clip_reference(w, gs)
+                        y_q = mx.quantized_matmul(
+                            x,
+                            w_q,
+                            scales,
+                            group_size=gs,
+                            bits=2,
+                            mode="ternary",
+                            transpose=transpose,
+                        )
+                        y_ref = (x @ w_hat.T) if transpose else (x @ w_hat)
+                        self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
 
     def test_qqmv(self):
         key = mx.random.key(0)

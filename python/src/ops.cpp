@@ -4627,8 +4627,12 @@ void init_ops(nb::module_& m) {
 
         .. note::
 
-          ``"ternary"`` is currently only implemented for the CPU backend;
-          it raises on the GPU (Metal/CUDA).
+          ``"ternary"`` has a native SIMD-fused kernel on the CPU backend,
+          and a real (unfused) Metal kernel backing ``quantize``/
+          ``dequantize`` on GPU. ``quantized_matmul`` with
+          ``mode="ternary"`` also works on the GPU backend, but composes
+          ``dequantize`` and a dense matmul rather than using a fused
+          kernel, since no fused ternary GPU matmul kernel exists yet.
 
         Args:
           w (array): Array to be quantized

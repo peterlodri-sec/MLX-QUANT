@@ -4669,16 +4669,6 @@ array quantized_matmul(
   auto [dtype, qmode] = validate_mode_with_type(
       "quantized_matmul", scales, biases, std::nullopt, mode);
 
-  if (qmode == QuantizationMode::Ternary &&
-      to_stream(s).device == Device::gpu) {
-    // No verified GPU (Metal/CUDA) kernel path exists for ternary yet --
-    // fail explicitly here rather than relying on unverified emergent
-    // kernel-lookup-failure behavior deeper in the GPU backend.
-    throw std::invalid_argument(
-        "[quantized_matmul] ternary quantization is not yet implemented on "
-        "the GPU (Metal/CUDA); use a CPU stream.");
-  }
-
   auto [group_size, bits] =
       quantization_params_from_mode(qmode, group_size_, bits_);
   // Check and extract the quantized matrix shape against x
@@ -4701,8 +4691,41 @@ array quantized_matmul(
   if (qmode == QuantizationMode::Affine) {
     inputs = {
         astype(x, dtype), w, astype(scales, dtype), astype(*biases, dtype)};
+  } else if (qmode == QuantizationMode::Ternary) {
+    // Unlike the fp family (scales always uint8, decoded in-kernel -- no
+    // ambiguity), ternary's scales are a real floating dtype that the
+    // CPU/GPU kernels read via an unchecked reinterpret_cast keyed on x's
+    // dtype (array::data<T>()). A caller-supplied scales dtype that
+    // doesn't match x would silently corrupt memory rather than throw, so
+    // force it to match here, mirroring affine's own astype calls above.
+    inputs = {astype(x, dtype), w, astype(scales, dtype)};
   } else {
     inputs = {x, w, scales};
+  }
+
+  if (qmode == QuantizationMode::Ternary &&
+      to_stream(s).device == Device::gpu) {
+    // No fused ternary GPU matmul kernel exists yet -- qmv/qmv_fast/
+    // qmv_wide/qmm/qmm_splitk/qvm/qvm_split_k each need their own bespoke
+    // kernel family (see QuantizedMatmul::eval_gpu's dispatch tree in
+    // mlx/backend/metal/quantized.cpp), and partially covering that tree
+    // would leave some shape/dtype combinations reaching a kernel name
+    // that was never written. Compose a correct answer instead from the
+    // real ternary_dequantize Metal kernel (mlx/backend/metal/kernels/
+    // ternary_quantized.h) plus the existing dense GPU matmul, which
+    // handles every shape and both transpose settings uniformly.
+    array w_dense = dequantize(
+        w,
+        scales,
+        std::nullopt,
+        group_size,
+        bits,
+        "ternary",
+        std::nullopt,
+        dtype,
+        s);
+    return transpose ? matmul(inputs[0], swapaxes(w_dense, -1, -2, s), s)
+                      : matmul(inputs[0], w_dense, s);
   }
 
   if (x.ndim() > 2 && w.ndim() > 2) {
@@ -5043,18 +5066,22 @@ ternary_quantize(const array& w, int group_size, int bits, StreamOrDevice s_) {
     };
   };
 
-  // No CPU or GPU kernel-level primitive exists for this mode yet -- the
-  // eval_cpu side runs the fallback eagerly (see
-  // mlx/backend/cpu/quantized.cpp), and there is no Metal kernel at all.
-  // Unlike fp_quantize's not-yet-bespoke modes (which reuse a real,
-  // already-shipped "fp_" Metal kernel family), ternary's 2-bit layout does
-  // not fit that family's template, so building a fast::Quantize primitive
-  // here and hoping eval_gpu's kernel-name lookup fails loud is not a
-  // verified safety net -- fail explicitly and immediately instead.
+  // No CPU primitive exists for this mode -- eval_cpu runs the fallback
+  // eagerly (see mlx/backend/cpu/quantized.cpp). On GPU, a real Metal kernel
+  // backs the standalone quantize op (mlx/backend/metal/kernels/
+  // ternary_quantized.h), so route through fast::Quantize like every other
+  // mode does.
   if (s.device == Device::gpu) {
-    throw std::invalid_argument(
-        "[quantize] ternary quantization is not yet implemented on the GPU "
-        "(Metal/CUDA); use a CPU stream.");
+    auto wq_shape = w.shape();
+    wq_shape.back() = w.shape(-1) * bits / 32;
+    auto sshape = w.shape();
+    sshape.back() = w.shape(-1) / group_size;
+    return array::make_arrays(
+        {std::move(wq_shape), std::move(sshape)},
+        {uint32, w.dtype()},
+        std::make_shared<fast::Quantize>(
+            s, fallback, group_size, bits, QuantizationMode::Ternary, false),
+        {w});
   }
   return fallback({w});
 }
@@ -5127,13 +5154,17 @@ array ternary_dequantize(
     return {astype(out, scales.dtype(), s)};
   };
 
-  // Same reasoning as ternary_quantize above: no verified GPU kernel path
-  // exists yet, so fail explicitly rather than relying on unverified
-  // emergent kernel-lookup-failure behavior.
+  // Same reasoning as ternary_quantize above: a real Metal kernel backs the
+  // standalone dequantize op, so route through fast::Quantize on GPU.
   if (s.device == Device::gpu) {
-    throw std::invalid_argument(
-        "[dequantize] ternary quantization is not yet implemented on the "
-        "GPU (Metal/CUDA); use a CPU stream.");
+    auto out_shape = w.shape();
+    out_shape.back() = out_size;
+    return array(
+        std::move(out_shape),
+        scales.dtype(),
+        std::make_shared<fast::Quantize>(
+            s, fallback, group_size, bits, QuantizationMode::Ternary, true),
+        {w, scales});
   }
   return fallback({w, scales})[0];
 }
