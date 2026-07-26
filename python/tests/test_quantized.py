@@ -232,9 +232,21 @@ class TestQuantized(mlx_tests.MLXTestCase):
         # The GPU (Metal/CUDA) quantize/dequantize path is backed by a real
         # kernel (mlx/backend/metal/kernels/ternary_quantized.h) -- verify
         # it round-trips against the same independent reference used above.
+        # Exercise every (T, group_size) combination the .metal file actually
+        # instantiates (float/float16_t/bfloat16_t x gs 32/64/128), not just
+        # the float32 default -- group_size=128 in particular takes a
+        # structurally distinct path in ternary_quantize (values_per_reduce
+        # == pack_factor, so the simd_shuffle_down combine loop runs zero
+        # iterations, unlike gs=32/64).
         if mx.metal.is_available():
             with mx.stream(mx.gpu):
-                for shape, gs in [((128, 512), 64), ((32, 256), 32), ((8, 64), 64)]:
+                for shape, gs in [
+                    ((128, 512), 32),
+                    ((128, 512), 64),
+                    ((128, 512), 128),
+                    ((32, 256), 32),
+                    ((8, 64), 64),
+                ]:
                     with self.subTest(shape=shape, gs=gs, device="gpu"):
                         w = mx.random.normal(shape=shape)
                         w_q, scales = mx.quantize(
@@ -245,6 +257,20 @@ class TestQuantized(mlx_tests.MLXTestCase):
                         )
                         w_ref = self.ternary_round_clip_reference(w, gs)
                         self.assertTrue(mx.allclose(w_hat, w_ref, atol=1e-6))
+
+                for dtype in [mx.float16, mx.bfloat16]:
+                    with self.subTest(dtype=dtype, device="gpu"):
+                        w = mx.random.normal(shape=(128, 512)).astype(dtype)
+                        w_q, scales = mx.quantize(
+                            w, group_size=64, bits=2, mode="ternary"
+                        )
+                        w_hat = mx.dequantize(
+                            w_q, scales, group_size=64, bits=2, mode="ternary"
+                        )
+                        w_ref = self.ternary_round_clip_reference(
+                            w.astype(mx.float32), 64
+                        ).astype(dtype)
+                        self.assertTrue(mx.allclose(w_hat, w_ref, atol=2e-2))
 
     def test_ternary_qmm(self):
         with mx.stream(mx.cpu):
@@ -307,13 +333,16 @@ class TestQuantized(mlx_tests.MLXTestCase):
 
         # GPU quantized_matmul composes dequantize + dense matmul rather
         # than a fused kernel (see mlx/ops.cpp) -- verify it still matches
-        # the same independent reference used above.
+        # the same independent reference used above, including gs=128
+        # (structurally distinct in ternary_quantize, see the comment in
+        # test_ternary_quantize_dequantize) and non-float32 dtypes.
         if mx.metal.is_available():
             with mx.stream(mx.gpu):
                 for M, K, N, gs, transpose in [
                     (1, 64, 32, 64, True),
                     (8, 128, 256, 64, True),
                     (5, 256, 17, 64, True),
+                    (8, 256, 32, 128, True),
                     (1, 64, 64, 64, False),
                     (8, 128, 256, 64, False),
                 ]:
@@ -338,6 +367,28 @@ class TestQuantized(mlx_tests.MLXTestCase):
                         )
                         y_ref = (x @ w_hat.T) if transpose else (x @ w_hat)
                         self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+                for dtype in [mx.float16, mx.bfloat16]:
+                    with self.subTest(dtype=dtype, device="gpu"):
+                        x = mx.random.normal(shape=(8, 128)).astype(dtype)
+                        w = mx.random.normal(shape=(256, 128)).astype(dtype)
+                        w_q, scales = mx.quantize(
+                            w, group_size=64, bits=2, mode="ternary"
+                        )
+                        w_hat = self.ternary_round_clip_reference(
+                            w.astype(mx.float32), 64
+                        ).astype(dtype)
+                        y_q = mx.quantized_matmul(
+                            x,
+                            w_q,
+                            scales,
+                            group_size=64,
+                            bits=2,
+                            mode="ternary",
+                            transpose=True,
+                        )
+                        y_ref = x @ w_hat.T
+                        self.assertTrue(mx.allclose(y_q, y_ref, atol=2e-2, rtol=2e-2))
 
     def test_qqmv(self):
         key = mx.random.key(0)
