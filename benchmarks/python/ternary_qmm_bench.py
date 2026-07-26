@@ -54,7 +54,10 @@ if __name__ == "__main__":
         report_memory_footprint(out_features, in_features)
 
     print()
-    print("quantized_matmul timing (unpack-then-BLAS-matmul CPU kernel, ")
-    print("not yet a fused/SIMD kernel -- see mlx/backend/cpu/quantized.cpp):")
+    print("quantized_matmul timing (fused SIMD kernel, M-tiled over MTILE=4 rows,")
+    print("transpose=True path -- see _ternary_qmm_t_simd in")
+    print("mlx/backend/cpu/quantized.cpp). M=1 (decode) is close to dense fp32;")
+    print("larger M is faster than the naive per-row version but still slower")
+    print("than dense BLAS -- honest gap, not yet closed.")
     for M, K, N in [(1, 4096, 4096), (32, 4096, 4096), (32, 4096, 11008)]:
         time_qmm(M, K, N)

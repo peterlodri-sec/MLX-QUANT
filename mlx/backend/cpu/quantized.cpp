@@ -920,14 +920,14 @@ void fp_bs_qmm_dispatch(
   }
 }
 
-// No fused ternary matmul kernel exists yet (the affine/fp families above
-// have hand-tuned SIMD inner loops; this is the correctness-first Stage 1
-// path). Unpack the 2-bit codes into a dense (K, N) buffer -- oriented so a
-// plain, non-transposed multiply is always correct regardless of
-// `transposed_w` -- then hand off to the existing BLAS-backed `matmul<T>`
-// (mlx/backend/cpu/gemm.h) instead of hand-rolling a new GEMM. Fusing the
-// unpack into the inner product loop, the way `_qmm`/`fp_qmm` do, is real
-// follow-on optimization work.
+// Correctness-first fallback for the cases the fused SIMD kernel below
+// (_ternary_qmm_t_simd) doesn't cover: transposed_w == false, group sizes
+// that don't divide evenly into a whole packed word, and bfloat16_t (no
+// real SIMD width on this backend -- see simd::max_size). Unpack the 2-bit
+// codes into a dense (K, N) buffer -- oriented so a plain, non-transposed
+// multiply is always correct regardless of `transposed_w` -- then hand off
+// to the existing BLAS-backed `matmul<T>` (mlx/backend/cpu/gemm.h) instead
+// of hand-rolling a new GEMM for this less common path.
 template <typename T>
 void ternary_unpack_dense(
     const uint32_t* w,
@@ -954,6 +954,148 @@ void ternary_unpack_dense(
   }
 }
 
+// Fused SIMD kernel for the transposed_w == true case (nn.Linear's
+// convention -- w stored as (N, K), y = x @ w.T -- the common hot path).
+// Ternary packs 16 two-bit codes per uint32 word (pack_factor = 32/bits);
+// with SIMD width S == 8 (float/float16 on this backend, via
+// mlx/backend/cpu/simd/accelerate_simd.h), each word yields two SIMD steps
+// of 8 codes. Unlike ternary_unpack_dense above, this never materializes a
+// dense buffer -- the 2-bit -> signed-float unpack happens directly in
+// registers, fused into the multiply-accumulate, mirroring how
+// `_qmm_t_simd` fuses affine's dequant into its inner loop.
+template <int Step>
+simd::Simd<float, 8> extract_ternary_simd(uint32_t word) {
+  static_assert(Step == 0 || Step == 1);
+  if constexpr (Step == 0) {
+    constexpr std::array<uint32_t, 8> shifts_ = {{0, 2, 4, 6, 8, 10, 12, 14}};
+    auto shifts(*(simd::Simd<uint32_t, 8>*)&shifts_);
+    simd::Simd<uint32_t, 8> wi(word);
+    wi = (wi >> shifts) & 0x3;
+    return simd::Simd<float, 8>(wi) - 1.0f;
+  } else {
+    constexpr std::array<uint32_t, 8> shifts_ = {
+        {16, 18, 20, 22, 24, 26, 28, 30}};
+    auto shifts(*(simd::Simd<uint32_t, 8>*)&shifts_);
+    simd::Simd<uint32_t, 8> wi(word);
+    wi = (wi >> shifts) & 0x3;
+    return simd::Simd<float, 8>(wi) - 1.0f;
+  }
+}
+
+// Single row (M == 1) of the fused kernel -- also used as the remainder
+// path when M is not a multiple of MTILE below.
+template <typename T>
+void _ternary_qmm_t_simd_row(
+    T* result,
+    const T* x,
+    const uint32_t* w,
+    const T* scales,
+    int N,
+    int K,
+    int group_size) {
+  constexpr int S = simd::max_size<T>;
+  constexpr int pack_factor = 16; // 32 bits / 2 bits per ternary code
+  int words_per_group = group_size / pack_factor;
+
+  const uint32_t* w_local = w;
+  const T* scales_local = scales;
+  for (int n = 0; n < N; n++) {
+    const T* x_local = x;
+    simd::Simd<float, S> acc(0);
+    for (int k = 0; k < K; k += group_size) {
+      T scale = *scales_local++;
+      for (int wg = 0; wg < words_per_group; wg++) {
+        uint32_t word = *w_local++;
+
+        auto codes0 = extract_ternary_simd<0>(word) * scale;
+        simd::Simd<float, S> x0 = simd::load<T, S>(x_local);
+        acc = acc + x0 * codes0;
+        x_local += S;
+
+        auto codes1 = extract_ternary_simd<1>(word) * scale;
+        simd::Simd<float, S> x1 = simd::load<T, S>(x_local);
+        acc = acc + x1 * codes1;
+        x_local += S;
+      }
+    }
+    result[n] = T(simd::sum(acc));
+  }
+}
+
+// Tiles over MTILE rows of `x` at once so each packed weight word is
+// unpacked once and reused across MTILE rows, instead of once per row --
+// the "3D" (M, K, N) tiling that a naive per-row loop (single-row kernel
+// above) leaves on the table. Without this, quantized_matmul re-walks and
+// re-unpacks the *entire* weight matrix once per row of `x`, which the
+// dense+BLAS fallback below does not (BLAS unpacks the weight once, up
+// front). Measured (benchmarks/python/ternary_qmm_bench.py): the per-row
+// kernel alone regressed batched (M > 1) matmul relative to the unpack-
+// once-then-BLAS fallback for large N; tiling over M fixes that while
+// keeping the M == 1 (autoregressive decode) case fast.
+template <typename T>
+void _ternary_qmm_t_simd(
+    T* result,
+    const T* x,
+    const uint32_t* w,
+    const T* scales,
+    int M,
+    int N,
+    int K,
+    int group_size) {
+  constexpr int S = simd::max_size<T>;
+  static_assert(S == 8, "ternary SIMD kernel requires a SIMD width of 8");
+  constexpr int pack_factor = 16; // 32 bits / 2 bits per ternary code
+  constexpr int MTILE = 4;
+  int words_per_group = group_size / pack_factor;
+
+  int m = 0;
+  for (; m + MTILE <= M; m += MTILE) {
+    const uint32_t* w_local = w;
+    const T* scales_local = scales;
+    const T* x_rows[MTILE];
+    for (int t = 0; t < MTILE; t++) {
+      x_rows[t] = x + (m + t) * K;
+    }
+
+    for (int n = 0; n < N; n++) {
+      simd::Simd<float, S> acc[MTILE];
+      for (int t = 0; t < MTILE; t++) {
+        acc[t] = simd::Simd<float, S>(0);
+      }
+      const T* x_rows_local[MTILE];
+      for (int t = 0; t < MTILE; t++) {
+        x_rows_local[t] = x_rows[t];
+      }
+
+      for (int k = 0; k < K; k += group_size) {
+        T scale = *scales_local++;
+        for (int wg = 0; wg < words_per_group; wg++) {
+          uint32_t word = *w_local++;
+          auto codes0 = extract_ternary_simd<0>(word) * scale;
+          auto codes1 = extract_ternary_simd<1>(word) * scale;
+          for (int t = 0; t < MTILE; t++) {
+            simd::Simd<float, S> x0 = simd::load<T, S>(x_rows_local[t]);
+            acc[t] = acc[t] + x0 * codes0;
+            x_rows_local[t] += S;
+            simd::Simd<float, S> x1 = simd::load<T, S>(x_rows_local[t]);
+            acc[t] = acc[t] + x1 * codes1;
+            x_rows_local[t] += S;
+          }
+        }
+      }
+
+      for (int t = 0; t < MTILE; t++) {
+        result[(m + t) * N + n] = T(simd::sum(acc[t]));
+      }
+    }
+  }
+
+  for (; m < M; m++) {
+    _ternary_qmm_t_simd_row<T>(
+        result + m * N, x + m * K, w, scales, N, K, group_size);
+  }
+}
+
 template <typename T>
 void ternary_qmm_dispatch_mode(
     array& out,
@@ -976,6 +1118,29 @@ void ternary_qmm_dispatch_mode(
   auto w_ptr = w.data<uint32_t>();
   auto scales_ptr = scales.data<T>();
 
+  constexpr int simd_pack_factor = 16; // 32 bits / 2 bits per ternary code
+  if constexpr (simd::max_size<T> == 8) {
+    if (transposed_w && group_size % simd_pack_factor == 0) {
+      for (int i = 0; i < batch_size; i++) {
+        _ternary_qmm_t_simd<T>(
+            out_ptr + i * M * N,
+            x_ptr + elem_to_loc(i * M * K, x.shape(), x.strides()),
+            w_ptr + elem_to_loc(i * w_els, w.shape(), w.strides()),
+            scales_ptr +
+                elem_to_loc(i * g_els, scales.shape(), scales.strides()),
+            M,
+            N,
+            K,
+            group_size);
+      }
+      return;
+    }
+  }
+
+  // Fallback for the non-transposed path, group sizes that don't divide
+  // evenly into a whole packed word, and dtypes without a real SIMD width
+  // on this backend (bfloat16_t): unpack into a dense (K, N) buffer once
+  // per batch and reuse the existing BLAS-backed matmul<T>.
   std::vector<T> dense(static_cast<size_t>(P) * U);
   Shape a_shape{M, K};
   Strides a_strides{K, 1};
