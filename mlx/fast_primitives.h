@@ -392,8 +392,7 @@ class TernaryQmvFast : public Custom {
   DEFINE_NAME(TernaryQmvFast);
 
   bool is_equivalent(const Primitive& other) const override {
-    return group_size_ ==
-        static_cast<const TernaryQmvFast&>(other).group_size_;
+    return group_size_ == static_cast<const TernaryQmvFast&>(other).group_size_;
   }
 
  private:

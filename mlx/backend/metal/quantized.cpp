@@ -27,10 +27,9 @@ auto get_quantized_kernel_wrapped(
     int bits,
     Args... args) {
   std::string template_def;
-  std::string fname = mode == "affine"
-      ? "affine_" + func
-      : mode == "ternary" ? "ternary_" + func
-                           : "fp_" + func;
+  std::string fname = mode == "affine" ? "affine_" + func
+      : mode == "ternary"              ? "ternary_" + func
+                                       : "fp_" + func;
   template_def = get_template_definition(
       name, fname, type, group_size, bits, std::forward<Args>(args)...);
   return get_quantized_kernel(d, name, template_def, mode);
@@ -50,10 +49,9 @@ auto get_qmm_nax_kernel_wrapped(
   // Ternary never reaches the NAX path (mlx/ops.cpp's TernaryQmm/TernaryQmv/
   // etc. dispatch never triggers is_nax_available() checks), but keep this
   // in sync with get_quantized_kernel_wrapped above for consistency.
-  std::string fname = mode == "affine"
-      ? "affine_" + func
-      : mode == "ternary" ? "ternary_" + func
-                           : "fp_" + func;
+  std::string fname = mode == "affine" ? "affine_" + func
+      : mode == "ternary"              ? "ternary_" + func
+                                       : "fp_" + func;
   template_def = get_template_definition(
       name, fname, type, group_size, bits, std::forward<Args>(args)...);
   return get_qmm_nax_kernel(d, name, template_def, mode);

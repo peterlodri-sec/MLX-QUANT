@@ -4718,9 +4718,9 @@ array quantized_matmul(
     // K % group_size == 0 (same reasoning as ternary_qvm's N % 32 gate) --
     // qmm_t_impl itself has no K-tail loop at all and assumes this.
     if (transpose && w.ndim() == 2 && x.size() / w_inner_dims >= 32) {
-      auto fallback = [group_size, bits, s](
-                          const std::vector<array>& inputs)
-          -> std::vector<array> {
+      auto fallback =
+          [group_size, bits, s](
+              const std::vector<array>& inputs) -> std::vector<array> {
         auto& x = inputs[0];
         auto& w = inputs[1];
         auto& scales = inputs[2];
@@ -4741,7 +4741,8 @@ array quantized_matmul(
       return array(
           std::move(out_shape),
           dtype,
-          std::make_shared<fast::TernaryQmm>(to_stream(s), fallback, group_size),
+          std::make_shared<fast::TernaryQmm>(
+              to_stream(s), fallback, group_size),
           inputs);
     }
 
@@ -4766,9 +4767,9 @@ array quantized_matmul(
     // handles every shape and both transpose settings uniformly.
     if (transpose && w.ndim() == 2 && w_outer_dims % 8 == 0 &&
         w_inner_dims % 1024 == 0) {
-      auto fallback = [group_size, bits, s](
-                          const std::vector<array>& inputs)
-          -> std::vector<array> {
+      auto fallback =
+          [group_size, bits, s](
+              const std::vector<array>& inputs) -> std::vector<array> {
         auto& x = inputs[0];
         auto& w = inputs[1];
         auto& scales = inputs[2];
@@ -4801,9 +4802,9 @@ array quantized_matmul(
     // a partial-tile write when N isn't a multiple of 8) -- mirrors
     // fp_qmv_impl. Still transpose == true, non-batched weights only.
     if (transpose && w.ndim() == 2) {
-      auto fallback = [group_size, bits, s](
-                          const std::vector<array>& inputs)
-          -> std::vector<array> {
+      auto fallback =
+          [group_size, bits, s](
+              const std::vector<array>& inputs) -> std::vector<array> {
         auto& x = inputs[0];
         auto& w = inputs[1];
         auto& scales = inputs[2];
@@ -4824,7 +4825,8 @@ array quantized_matmul(
       return array(
           std::move(out_shape),
           dtype,
-          std::make_shared<fast::TernaryQmv>(to_stream(s), fallback, group_size),
+          std::make_shared<fast::TernaryQmv>(
+              to_stream(s), fallback, group_size),
           inputs);
     }
 
@@ -4839,9 +4841,9 @@ array quantized_matmul(
     // divisibility requirement -- qvm_impl's own "remaining" branch
     // (mirrored in ternary_qvm_impl) already handles any K correctly.
     if (!transpose && w.ndim() == 2 && w_outer_dims % 32 == 0) {
-      auto fallback = [group_size, bits, s](
-                          const std::vector<array>& inputs)
-          -> std::vector<array> {
+      auto fallback =
+          [group_size, bits, s](
+              const std::vector<array>& inputs) -> std::vector<array> {
         auto& x = inputs[0];
         auto& w = inputs[1];
         auto& scales = inputs[2];
@@ -4862,7 +4864,8 @@ array quantized_matmul(
       return array(
           std::move(out_shape),
           dtype,
-          std::make_shared<fast::TernaryQvm>(to_stream(s), fallback, group_size),
+          std::make_shared<fast::TernaryQvm>(
+              to_stream(s), fallback, group_size),
           inputs);
     }
 
@@ -4877,7 +4880,7 @@ array quantized_matmul(
         dtype,
         s);
     return transpose ? matmul(inputs[0], swapaxes(w_dense, -1, -2, s), s)
-                      : matmul(inputs[0], w_dense, s);
+                     : matmul(inputs[0], w_dense, s);
   }
 
   if (x.ndim() > 2 && w.ndim() > 2) {

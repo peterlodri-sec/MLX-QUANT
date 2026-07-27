@@ -186,7 +186,9 @@ class TestQuantized(mlx_tests.MLXTestCase):
         dequant = (code * scale).reshape(shape)
         return dequant
 
-    def assert_ternary_gpu_allclose(self, a, b, atol=1e-4, rtol=1e-4, max_bad_frac=0.02):
+    def assert_ternary_gpu_allclose(
+        self, a, b, atol=1e-4, rtol=1e-4, max_bad_frac=0.02
+    ):
         # Unlike affine/fp's min/max-based scale (order-independent -- min
         # and max never disagree regardless of reduction order), ternary's
         # scale is mean(|w|), a sum, and floating-point addition is not
@@ -414,7 +416,9 @@ class TestQuantized(mlx_tests.MLXTestCase):
                             transpose=True,
                         )
                         y_ref = x @ w_hat.T
-                        self.assert_ternary_gpu_allclose(y_q, y_ref, atol=2e-2, rtol=2e-2)
+                        self.assert_ternary_gpu_allclose(
+                            y_q, y_ref, atol=2e-2, rtol=2e-2
+                        )
 
     def test_ternary_qmv_fast(self):
         # The fused ternary_qmv_fast GPU kernel only engages for a specific
@@ -443,7 +447,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                     w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
                     w_hat = self.ternary_round_clip_reference(w, gs)
                     y_q = mx.quantized_matmul(
-                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
                         transpose=True,
                     )
                     y_ref = x @ w_hat.T
@@ -459,7 +468,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                     w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
                     w_hat = self.ternary_round_clip_reference(w, gs)
                     y_q = mx.quantized_matmul(
-                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
                         transpose=True,
                     )
                     y_ref = x @ w_hat.T
@@ -472,7 +486,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=True,
                 )
                 y_ref = x @ w_hat.T
@@ -485,7 +504,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=True,
                 )
                 y_ref = x @ mx.swapaxes(w_hat, -1, -2)
@@ -519,7 +543,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                     w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
                     w_hat = self.ternary_round_clip_reference(w, gs)
                     y_q = mx.quantized_matmul(
-                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
                         transpose=False,
                     )
                     y_ref = x @ w_hat
@@ -532,7 +561,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=False,
                 )
                 y_ref = x @ w_hat
@@ -567,7 +601,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                     w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
                     w_hat = self.ternary_round_clip_reference(w, gs)
                     y_q = mx.quantized_matmul(
-                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
                         transpose=True,
                     )
                     y_ref = x @ w_hat.T
@@ -581,7 +620,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=True,
                 )
                 y_ref = x @ mx.swapaxes(w_hat, -1, -2)
@@ -628,7 +672,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                     w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
                     w_hat = self.ternary_round_clip_reference(w, gs)
                     y_q = mx.quantized_matmul(
-                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        x,
+                        w_q,
+                        scales,
+                        group_size=gs,
+                        bits=2,
+                        mode="ternary",
                         transpose=True,
                     )
                     y_ref = x @ w_hat.T
@@ -642,7 +691,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=True,
                 )
                 y_ref = x @ w_hat.T
@@ -656,7 +710,12 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
                 w_hat = self.ternary_round_clip_reference(w, 64)
                 y_q = mx.quantized_matmul(
-                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    x,
+                    w_q,
+                    scales,
+                    group_size=64,
+                    bits=2,
+                    mode="ternary",
                     transpose=True,
                 )
                 y_ref = x @ mx.swapaxes(w_hat, -1, -2)

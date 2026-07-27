@@ -19,7 +19,9 @@ BITS = 2
 
 
 def compose(x, w_q, scales, transpose):
-    w_dense = mx.dequantize(w_q, scales, group_size=GROUP_SIZE, bits=BITS, mode="ternary")
+    w_dense = mx.dequantize(
+        w_q, scales, group_size=GROUP_SIZE, bits=BITS, mode="ternary"
+    )
     return x @ (w_dense.T if transpose else w_dense)
 
 
@@ -33,7 +35,12 @@ def bench_shape(M, K, N, transpose, label):
 
     def fused(x):
         return mx.quantized_matmul(
-            x, w_q, scales, group_size=GROUP_SIZE, bits=BITS, mode="ternary",
+            x,
+            w_q,
+            scales,
+            group_size=GROUP_SIZE,
+            bits=BITS,
+            mode="ternary",
             transpose=transpose,
         )
 
@@ -44,7 +51,9 @@ def bench_shape(M, K, N, transpose, label):
         return (x @ w.T) if transpose else (x @ w)
 
     print(f"--- {label}: M={M} K={K} N={N} transpose={transpose} ---")
-    time_fn(fused, x, msg="fused (ternary_qmv_fast/qmv/qvm/qmm_t, whichever gates match)")
+    time_fn(
+        fused, x, msg="fused (ternary_qmv_fast/qmv/qvm/qmm_t, whichever gates match)"
+    )
     time_fn(composed, x, msg="compose (dequantize + dense matmul)")
     time_fn(dense, x, msg="dense fp32 matmul (reference, not quantized)")
 

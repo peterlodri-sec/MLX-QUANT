@@ -138,7 +138,8 @@ template <typename T, const int group_size, const int bits>
 // quantized.h's own qdot, adapted for ternary's direct (non fp8-encoded)
 // scale and 2-bit codes.
 template <typename U, int values_per_thread>
-inline U ternary_qdot(const device uint8_t* w, const thread U* x_thread, U scale) {
+inline U
+ternary_qdot(const device uint8_t* w, const thread U* x_thread, U scale) {
   U accum = 0;
   constexpr int bytes = values_per_thread / 4;
 #pragma clang loop unroll(full)
@@ -195,10 +196,8 @@ inline void ternary_load_vector(const device T* x, thread U* x_thread) {
 }
 
 template <typename T, typename U, int values_per_thread>
-inline void ternary_load_vector_safe(
-    const device T* x,
-    thread U* x_thread,
-    int N) {
+inline void
+ternary_load_vector_safe(const device T* x, thread U* x_thread, int N) {
   for (int i = 0; i < N; i++) {
     x_thread[i] = x[i];
   }
@@ -283,8 +282,7 @@ METAL_FUNC void ternary_qmv_impl(
         0,
         values_per_thread);
     if (remaining > 0) {
-      ternary_load_vector_safe<T, U, values_per_thread>(
-          x, x_thread, remaining);
+      ternary_load_vector_safe<T, U, values_per_thread>(x, x_thread, remaining);
 
       for (int row = 0;
            row < results_per_simdgroup && out_row + row < out_vec_size;
@@ -334,8 +332,7 @@ METAL_FUNC void ternary_qmv_impl(
         0,
         values_per_thread);
     if (remaining > 0) {
-      ternary_load_vector_safe<T, U, values_per_thread>(
-          x, x_thread, remaining);
+      ternary_load_vector_safe<T, U, values_per_thread>(x, x_thread, remaining);
 
       for (int row = 0; row < results_per_simdgroup; row++) {
         auto wl = (const device uint8_t*)(ws + row * in_vec_size_w);
@@ -464,11 +461,8 @@ template <typename T, int group_size, int bits>
 // Mirrors quantized.h's own qouter, minus the bias term ternary doesn't
 // have.
 template <typename U, int values_per_thread>
-inline void ternary_qouter(
-    const thread uint8_t* w,
-    U x,
-    U scale,
-    thread U* result) {
+inline void
+ternary_qouter(const thread uint8_t* w, U x, U scale, thread U* result) {
   constexpr int bytes = values_per_thread / 4;
 #pragma clang loop unroll(full)
   for (int b = 0; b < bytes; b++) {
@@ -520,7 +514,8 @@ METAL_FUNC void ternary_qvm_impl(
   const int out_vec_size_w = out_vec_size / pack_factor;
   const int out_vec_size_g = out_vec_size / group_size;
   int out_col = values_per_thread * (tid.y * num_simdgroups + simd_gid);
-  const device uint32_t* ws = w + out_col / pack_factor + simd_lid * out_vec_size_w;
+  const device uint32_t* ws =
+      w + out_col / pack_factor + simd_lid * out_vec_size_w;
   scales += out_col / group_size + simd_lid * out_vec_size_g;
   x += tid.x * in_vec_stride + simd_lid;
   y += tid.x * out_vec_size + out_col;
