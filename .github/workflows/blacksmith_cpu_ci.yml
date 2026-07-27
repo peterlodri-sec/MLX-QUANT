@@ -1,0 +1,68 @@
+name: Blacksmith CPU CI
+
+# Every substantial job in build_and_test.yml (build_and_test, mac_build,
+# mac_test, build_documentation) is gated on
+# `if: github.repository == 'ml-explore/mlx'`, so none of them run on this
+# fork -- only check_lint/sanitizer/fedora jobs do. This workflow fills that
+# gap for the CPU-only (no Metal, no CUDA) build + test path specifically,
+# using Blacksmith's faster runners instead of GitHub-hosted ones. Metal
+# builds need real Apple hardware and are out of scope here -- Blacksmith
+# doesn't offer macOS runners.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: blacksmith-cpu-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  cpu_build_and_test:
+    name: CPU-only build + test
+    # Adjust the size suffix to whatever's available on your Blacksmith
+    # plan (e.g. blacksmith-2vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204).
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential \
+            libblas-dev \
+            liblapacke-dev \
+            libopenblas-dev \
+            cmake \
+            ninja-build
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+      # Blacksmith's cache action is a drop-in replacement for
+      # actions/cache backed by their own faster storage.
+      - uses: useblacksmith/cache@v5
+        with:
+          path: build
+          key: blacksmith-cpu-ci-build-${{ hashFiles('mlx/**', 'CMakeLists.txt') }}
+          restore-keys: |
+            blacksmith-cpu-ci-build-
+
+      - name: Configure (CPU-only, no Metal, no CUDA)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMLX_BUILD_METAL=OFF \
+            -DMLX_BUILD_CUDA=OFF \
+            -DMLX_BUILD_TESTS=ON \
+            -DMLX_BUILD_PYTHON_BINDINGS=OFF \
+            -G Ninja
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ./build/tests/tests
