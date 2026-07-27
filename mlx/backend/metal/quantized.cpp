@@ -2051,6 +2051,120 @@ void fast::TernaryQmm::eval_gpu(
   compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
 }
 
+void fast::MaybeQuant::eval_gpu(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  auto& s = stream();
+  auto& d = metal::device(s.device);
+  auto& out = outputs[0];
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  array w = ensure_row_contiguous_matrix(inputs[0], d, s);
+
+  int simd_size = 32;
+  int values_per_reduce = group_size_ / simd_size;
+  int per_thread = std::max(group_size_ / simd_size, 1);
+  MTL::Size group_dims(simd_size, 1, 1);
+  MTL::Size grid_dims(w.size() / per_thread, 1, 1);
+
+  std::string kname;
+  kname.reserve(64);
+  std::string type_string = get_type_string(w.dtype());
+  concatenate(kname, "ternary_maybequant_", type_string, "_gs_", group_size_, "_b_2");
+  auto kernel = get_quantized_kernel_wrapped(
+      d, kname, "maybequant", "ternary", type_string, group_size_, 2);
+
+  auto& compute_encoder = metal::get_command_encoder(s);
+  compute_encoder.set_compute_pipeline_state(kernel);
+
+  int c = 0;
+  compute_encoder.set_input_array(w, c++);
+  compute_encoder.set_output_array(out, c++);
+  compute_encoder.set_input_array(outputs[1], c++);
+  compute_encoder.set_bytes(prob_, c++);
+  compute_encoder.set_bytes(uint32_t(42), c++);
+
+  compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
+}
+
+void fast::MaybeQuantMatmul::eval_gpu(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  auto& s = stream();
+  auto& d = metal::device(s.device);
+  auto& out = outputs[0];
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  array x = ensure_row_contiguous_matrix(inputs[0], d, s);
+  array w = ensure_row_contiguous_matrix(inputs[1], d, s);
+
+  int K = x.shape(-1);
+  int N = out.shape(-1);
+
+  MTL::Size group_dims(256, 1, 1);
+  MTL::Size grid_dims(N, 1, 1);
+
+  std::string kname;
+  kname.reserve(64);
+  std::string type_string = get_type_string(x.dtype());
+  concatenate(kname, "ternary_maybequant_matmul_", type_string, "_gs_", group_size_, "_b_2");
+  auto kernel = get_quantized_kernel_wrapped(
+      d, kname, "maybequant_matmul", "ternary", type_string, group_size_, 2);
+
+  auto& compute_encoder = metal::get_command_encoder(s);
+  compute_encoder.set_compute_pipeline_state(kernel);
+
+  int c = 0;
+  compute_encoder.set_input_array(w, c++);
+  compute_encoder.set_output_array(outputs[1], c++);
+  compute_encoder.set_input_array(x, c++);
+  compute_encoder.set_output_array(out, c++);
+  compute_encoder.set_bytes(K, c++);
+  compute_encoder.set_bytes(N, c++);
+  compute_encoder.set_bytes(prob_, c++);
+  compute_encoder.set_bytes(uint32_t(42), c++);
+
+  compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
+}
+
+void fast::MergeQuantMatmul::eval_gpu(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  auto& s = stream();
+  auto& d = metal::device(s.device);
+  auto& out = outputs[0];
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  array x = ensure_row_contiguous_matrix(inputs[0], d, s);
+  array w = ensure_row_contiguous_matrix(inputs[1], d, s);
+
+  int K = x.shape(-1);
+  int N = out.shape(-1);
+
+  MTL::Size group_dims(256, 1, 1);
+  MTL::Size grid_dims(N, 1, 1);
+
+  std::string kname;
+  kname.reserve(64);
+  std::string type_string = get_type_string(x.dtype());
+  concatenate(kname, "ternary_mergequant_matmul_", type_string, "_gs_", group_size_, "_b_2");
+  auto kernel = get_quantized_kernel_wrapped(
+      d, kname, "mergequant_matmul", "ternary", type_string, group_size_, 2);
+
+  auto& compute_encoder = metal::get_command_encoder(s);
+  compute_encoder.set_compute_pipeline_state(kernel);
+
+  int c = 0;
+  compute_encoder.set_input_array(w, c++);
+  compute_encoder.set_output_array(outputs[1], c++);
+  compute_encoder.set_input_array(x, c++);
+  compute_encoder.set_output_array(out, c++);
+  compute_encoder.set_bytes(K, c++);
+  compute_encoder.set_bytes(N, c++);
+
+  compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
+}
+
 void fast::ConvertFP8::eval_gpu(
     const std::vector<array>& inputs,
     std::vector<array>& outputs) {

@@ -159,6 +159,15 @@ class MLX_API Device {
   int get_architecture_gen() const {
     return arch_gen_;
   }
+
+  enum class ChipFamily { M1, M2, M3, Unknown };
+
+  ChipFamily chip_family() const {
+    if (arch_gen_ >= 9) return ChipFamily::M3;
+    if (arch_gen_ == 8) return ChipFamily::M2;
+    if (arch_gen_ == 7) return ChipFamily::M1;
+    return ChipFamily::Unknown;
+  }
   std::tuple<int, int> get_max_ops_mb_per_buffer() const {
     return std::make_tuple(max_ops_per_buffer_, max_mb_per_buffer_);
   }

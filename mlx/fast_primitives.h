@@ -497,6 +497,99 @@ class TernaryQmm : public Custom {
   int group_size_;
 };
 
+class MaybeQuant : public Custom {
+ public:
+  MaybeQuant(
+      Stream stream,
+      std::function<std::vector<array>(std::vector<array>)> fallback,
+      int group_size,
+      float prob)
+      : Custom(stream, std::move(fallback)),
+        group_size_(group_size),
+        prob_(prob) {}
+
+  void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override {
+    throw std::runtime_error(
+        "[MaybeQuant] GPU-only primitive; mlx::quantized_matmul should "
+        "never construct this for a CPU stream.");
+  }
+
+  void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override;
+
+  DEFINE_NAME(MaybeQuant);
+
+  bool is_equivalent(const Primitive& other) const override {
+    auto& o = static_cast<const MaybeQuant&>(other);
+    return group_size_ == o.group_size_ && prob_ == o.prob_;
+  }
+
+ private:
+  int group_size_;
+  float prob_;
+};
+
+class MaybeQuantMatmul : public Custom {
+ public:
+  MaybeQuantMatmul(
+      Stream stream,
+      std::function<std::vector<array>(std::vector<array>)> fallback,
+      int group_size,
+      float prob)
+      : Custom(stream, std::move(fallback)),
+        group_size_(group_size),
+        prob_(prob) {}
+
+  void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override {
+    throw std::runtime_error(
+        "[MaybeQuantMatmul] GPU-only primitive.");
+  }
+
+  void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override;
+
+  DEFINE_NAME(MaybeQuantMatmul);
+
+  bool is_equivalent(const Primitive& other) const override {
+    auto& o = static_cast<const MaybeQuantMatmul&>(other);
+    return group_size_ == o.group_size_ && prob_ == o.prob_;
+  }
+
+ private:
+  int group_size_;
+  float prob_;
+};
+
+class MergeQuantMatmul : public Custom {
+ public:
+  MergeQuantMatmul(
+      Stream stream,
+      std::function<std::vector<array>(std::vector<array>)> fallback,
+      int group_size)
+      : Custom(stream, std::move(fallback)), group_size_(group_size) {}
+
+  void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override {
+    throw std::runtime_error(
+        "[MergeQuantMatmul] GPU-only primitive.");
+  }
+
+  void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override;
+
+  DEFINE_NAME(MergeQuantMatmul);
+
+  bool is_equivalent(const Primitive& other) const override {
+    return group_size_ ==
+        static_cast<const MergeQuantMatmul&>(other).group_size_;
+  }
+
+ private:
+  int group_size_;
+};
+
 using ScalarArg = std::variant<bool, int, float>;
 
 class CustomKernel : public Primitive {

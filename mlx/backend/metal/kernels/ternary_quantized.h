@@ -882,3 +882,177 @@ template <
   ternary_qmm_t_impl<T, group_size, bits, aligned_N, BM, BK, BN>(
       w, scales, x, y, Xs, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
 }
+
+inline uint hash_rand(uint seed, uint idx) {
+  uint h = seed ^ idx;
+  h ^= h >> 16;
+  h *= 0x85ebca6bU;
+  h ^= h >> 13;
+  h *= 0xc2b2ae35U;
+  h ^= h >> 16;
+  return h;
+}
+
+inline float hash_randf(uint seed, uint idx) {
+  return float(hash_rand(seed, idx)) / float(0xffffffffU);
+}
+
+template <typename T, const int group_size, const int bits>
+[[kernel]] void ternary_maybequant(
+    const device T* w [[buffer(0)]],
+    device uint8_t* out [[buffer(1)]],
+    device T* scales [[buffer(2)]],
+    const constant float& prob [[buffer(3)]],
+    const constant uint& seed [[buffer(4)]],
+    uint2 index [[thread_position_in_grid]],
+    uint2 grid_dim [[threads_per_grid]]) {
+  static_assert(bits == 2);
+  static_assert(group_size % SIMD_SIZE == 0);
+
+  constexpr float eps = 1e-7;
+  constexpr int pack_factor = 8 / bits;
+  constexpr int values_per_reduce = group_size / SIMD_SIZE;
+  constexpr int writes_per_reduce = pack_factor / values_per_reduce;
+
+  size_t offset = index.x + grid_dim.x * size_t(index.y);
+  size_t in_index = offset * values_per_reduce;
+
+  float w_thread[values_per_reduce];
+  float local_abs_sum = 0;
+
+#pragma clang loop unroll(full)
+  for (int i = 0; i < values_per_reduce; i++) {
+    float val = w[in_index + i];
+    float r = hash_randf(seed, in_index + i);
+    float keep = r > prob ? val : 0.0f;
+    w_thread[i] = keep;
+    local_abs_sum += abs(keep);
+  }
+
+  float scale = max(simd_sum(local_abs_sum) / float(group_size), eps);
+
+  size_t gindex = in_index / group_size;
+  if (in_index % group_size == 0) {
+    scales[gindex] = static_cast<T>(scale);
+  }
+
+  uint8_t output = 0;
+#pragma clang loop unroll(full)
+  for (int i = 0; i < values_per_reduce; i++) {
+    float shifted = round(clamp(w_thread[i] / scale, -1.0f, 1.0f)) + 1.0f;
+    uint8_t val = static_cast<uint8_t>(shifted);
+    output |= val << (bits * i);
+
+#pragma clang loop unroll(full)
+    for (int j = 1; j < writes_per_reduce; j++) {
+      uint8_t sval = simd_shuffle_down(val, j);
+      output |= static_cast<uint8_t>(sval)
+          << (bits * (j * values_per_reduce + i));
+    }
+  }
+  if (offset % writes_per_reduce == 0) {
+    out[offset / writes_per_reduce] = output;
+  }
+}
+
+template <typename T, const int group_size, const int bits>
+[[kernel]] void ternary_mergequant_matmul(
+    const device T* w [[buffer(0)]],
+    device T* scales [[buffer(1)]],
+    const device T* x [[buffer(2)]],
+    device T* y [[buffer(3)]],
+    const constant int& K [[buffer(4)]],
+    const constant int& N [[buffer(5)]],
+    uint tid [[thread_position_in_grid]]) {
+  static_assert(bits == 2);
+
+  int n = tid;
+  if (n >= N) return;
+
+  constexpr float eps = 1e-7;
+  constexpr int SIMD = SIMD_SIZE;
+
+  T scale = 0;
+  float local_abs_sum = 0;
+  int groups = K / group_size;
+
+  int row = tid / N;
+  int col = tid % N;
+
+  float accum = 0;
+  const device T* wx = w + row * K;
+  const device T* xx = x + row * K;
+
+  for (int g = 0; g < groups; g++) {
+    local_abs_sum = 0;
+    for (int j = 0; j < group_size; j++) {
+      local_abs_sum += abs(wx[g * group_size + j]);
+    }
+    scale = max(local_abs_sum / float(group_size), eps);
+
+    for (int j = 0; j < group_size; j += 4) {
+      float wv[4], xv[4];
+      for (int s = 0; s < 4; s++) {
+        int jj = g * group_size + j + s;
+        float raw = wx[jj];
+        float q = round(clamp(raw / scale, -1.0f, 1.0f));
+        wv[s] = q * scale;
+        xv[s] = xx[jj];
+      }
+      accum += wv[0] * xv[0] + wv[1] * xv[1] + wv[2] * xv[2] + wv[3] * xv[3];
+    }
+  }
+
+  y[tid] = static_cast<T>(accum);
+}
+
+template <typename T, const int group_size, const int bits>
+[[kernel]] void ternary_maybequant_matmul(
+    const device T* w [[buffer(0)]],
+    device T* scales [[buffer(1)]],
+    const device T* x [[buffer(2)]],
+    device T* y [[buffer(3)]],
+    const constant int& K [[buffer(4)]],
+    const constant int& N [[buffer(5)]],
+    const constant float& prob [[buffer(6)]],
+    const constant uint& seed [[buffer(7)]],
+    uint tid [[thread_position_in_grid]]) {
+  static_assert(bits == 2);
+
+  if (tid >= N) return;
+
+  constexpr float eps = 1e-7;
+  int row = tid / N;
+  int col = tid % N;
+
+  float accum = 0;
+  const device T* wx = w + row * K;
+  const device T* xx = x + row * K;
+
+  for (int g = 0; g < K / group_size; g++) {
+    float local_abs_sum = 0;
+    for (int j = 0; j < group_size; j++) {
+      int jj = g * group_size + j;
+      float raw = wx[jj];
+      float r = hash_randf(seed, jj);
+      local_abs_sum += r > prob ? abs(raw) : 0.0f;
+    }
+    float scale_val = max(local_abs_sum / float(group_size), eps);
+
+    for (int j = 0; j < group_size; j += 4) {
+      float wv[4], xv[4];
+      for (int s = 0; s < 4; s++) {
+        int jj = g * group_size + j + s;
+        float raw = wx[jj];
+        float r = hash_randf(seed, jj);
+        float keep = r > prob ? raw : 0.0f;
+        float q = round(clamp(keep / scale_val, -1.0f, 1.0f));
+        wv[s] = q * scale_val;
+        xv[s] = xx[jj];
+      }
+      accum += wv[0] * xv[0] + wv[1] * xv[1] + wv[2] * xv[2] + wv[3] * xv[3];
+    }
+  }
+
+  y[tid] = static_cast<T>(accum);
+}
