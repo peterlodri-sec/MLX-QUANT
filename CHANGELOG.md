@@ -6,6 +6,95 @@ upstreamed. Versions here are independent of upstream MLX's own version
 numbers (this fork branched from upstream `973e27f8`, tagged `v0.32.0` in
 upstream's own scheme).
 
+## v1.4.2 "Omni"
+
+Closes essentially every remaining gap named in v1.0.0's "known gaps"
+section. Ternary quantized ops on GPU now have real fused kernel coverage
+for every shape except a batched (`w.ndim() > 2`) weight tensor, which
+still composes `dequantize` + a dense matmul.
+
+### GPU (Metal) backend — new since v1.0.0
+
+- **`gather_qmm` (MoE-style indexed matmul)** now works for
+  `mode="ternary"` on both CPU and GPU — it previously threw
+  unconditionally. Composed from `dequantize` + the existing `gather_mm`
+  op (which already implements per-token/per-expert weight selection
+  generically), verified for correctness and gradients against
+  `mx.gather_mm` on dequantized weights.
+- **`ternary_qvm`**: fused kernel for `quantized_matmul(transpose=False)`,
+  non-batched weights. Mirrors `qvm_impl`.
+- **`ternary_qmv`**: general, bounds-checked fused kernel for
+  `transpose=True` covering any `K`/`N` (safe zero-padded/partial-byte
+  K-tail, "slide the last tile back" trick for `N` not a multiple of 8) —
+  the fallback whenever `ternary_qmv_fast`'s exact-multiple precondition
+  doesn't hold. Mirrors `fp_qmv_impl`. Between this and `ternary_qmv_fast`,
+  `transpose=True` non-batched matmul is now *always* fused.
+- **`ternary_qmm_t`**: tiled GEMM for large-M matmul (`M >= 32`,
+  non-batched weights, `transpose=True`), decoding each weight group once
+  per 32-row tile and reusing it across all 32 rows via threadgroup
+  memory instead of re-decoding per row. A real `steel::BlockMMA`/
+  `BlockLoader` integration mirroring `QuantizedBlockLoader`/`qmm_t_impl`/
+  `affine_qmm_t`. Measured 1.25–1.7x faster than the compose fallback
+  across `M=32..256`, landing close to dense fp32 GPU matmul's own
+  timing. `qmm_splitk` (the very-large-K split-K variant) is not
+  implemented — `ternary_qmm_t` already handles any `K` correctly, just
+  without split-K's extra parallelism.
+- Each of the four fused paths above (`qmv_fast`, `qvm`, `qmv`, `qmm_t`)
+  is dispatched through its own dedicated `fast::Custom`-derived
+  primitive (`TernaryQmvFast`/`TernaryQvm`/`TernaryQmv`/`TernaryQmm`)
+  rather than through `QuantizedMatmul`'s shared affine/fp dispatch tree,
+  so adding each one could never leave some shape/dtype combination
+  reaching a kernel name that was never written, and none of them touch
+  or risk the already-working affine/fp code paths.
+
+### Fixed
+
+- **A real CPU-only (no Metal, no CUDA) build regression**, present since
+  `TernaryQmvFast` was introduced in v1.0.0: `mlx/backend/no_gpu/
+  primitives.cpp` provides `NO_GPU_MULTI` stub `eval_gpu` definitions for
+  every GPU-only `fast::Custom` primitive so their vtables link when no
+  GPU backend is compiled at all; the ternary primitives were never added
+  there, so the CPU-only build silently failed to link `tests/tests`.
+  (Earlier "CPU-only build clean" checks in this project's own history
+  were false positives from stale incremental linking — ninja hadn't
+  actually relinked the test binary. Verification now always forces a
+  fresh link first.)
+- `get_quantized_kernel_wrapped`/`get_qmm_nax_kernel_wrapped`'s kernel-name
+  computation only ever branched `affine_`/`fp_`, silently mapping
+  ternary to the wrong `fp_` prefix. Harmless for the default non-JIT
+  build; would have broken `MLX_METAL_JIT=ON` builds.
+
+### Numerical property documented (not a bug)
+
+Unlike `affine`'s min/max-based scale (order-independent — min and max
+never disagree regardless of reduction order), ternary's scale is
+`mean(|w|)`, a sum, and floating-point addition is not associative. The
+GPU kernels' `simd_sum` (a parallel tree reduction) can legitimately
+disagree with a sequentially-computed reference sum in the last bit,
+which occasionally (~2% of random seeds in testing) flips a weight
+whose `w/scale` ratio sits almost exactly on a `round()` tie. Bounded to
+one code step, and — new observation from `ternary_qmm_t` testing — its
+visible blast radius scales with `M` for GEMM-style kernels, since a
+single mis-quantized weight is shared by every output row that reads
+that weight column (GEMV-style kernels only ever showed it in one row).
+Documented in `ternary_quantized.h` and handled by
+`assert_ternary_gpu_allclose` (tolerates a small, bounded fraction of
+outliers) in the test suite, not by chasing the GPU reduction order to
+match one arbitrary reference implementation.
+
+### Known gaps / explicitly out of scope for v1.4.2
+
+- No Swift bindings (`mlx-swift`) — still C++/Python only. Consuming
+  this from a Swift project (e.g. Osaurus) needs a separate port.
+- Batched weights (`w.ndim() > 2`) for `quantized_matmul` still compose
+  rather than using a fused kernel, for both `transpose` settings.
+- `qmm_splitk`/`qvm_split_k` (very-large-K split-K variants) not
+  implemented — `ternary_qmm_t`/`ternary_qvm` already handle any `K`
+  correctly without them.
+- `qmv_wide`/`qmv_quad` (further GEMV speed refinements for specific
+  `M`/`K` ranges) not implemented — `ternary_qmv`'s general path already
+  covers those shapes correctly, just without their extra optimization.
+
 ## v1.0.0
 
 First tagged release of this fork's headline feature: a native **ternary
