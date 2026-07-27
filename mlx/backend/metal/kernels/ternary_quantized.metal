@@ -19,6 +19,9 @@
   instantiate_ternary_quantized(qmv_fast, type, group_size, bits)   \
   instantiate_ternary_quantized(qvm, type, group_size, bits)        \
   instantiate_ternary_quantized(qmv, type, group_size, bits)        \
+  instantiate_ternary_quantized(maybequant, type, group_size, bits) \
+  instantiate_ternary_quantized(maybequant_matmul, type, group_size, bits) \
+  instantiate_ternary_quantized(mergequant_matmul, type, group_size, bits) \
   instantiate_ternary_qmm_t_wrap(type, group_size, bits)
 
 #define instantiate_ternary_qmm_t(type, group_size, bits, aligned_N)        \

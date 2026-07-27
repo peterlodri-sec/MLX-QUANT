@@ -972,7 +972,7 @@ template <typename T, const int group_size, const int bits>
   constexpr float eps = 1e-7;
   constexpr int SIMD = SIMD_SIZE;
 
-  T scale = 0;
+  float scale = 0;
   float local_abs_sum = 0;
   int groups = K / group_size;
 

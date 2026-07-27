@@ -3463,6 +3463,10 @@ std::string quantization_mode_to_string(QuantizationMode mode) {
       return "mxfp8";
     case QuantizationMode::Ternary:
       return "ternary";
+    case QuantizationMode::Maybe:
+      return "maybe";
+    case QuantizationMode::Mergeq:
+      return "mergeq";
     case QuantizationMode::Nvfp4:
     default:
       return "nvfp4";
@@ -3482,6 +3486,10 @@ QuantizationMode string_to_quantization_mode(
     return QuantizationMode::Nvfp4;
   } else if (mode == "ternary") {
     return QuantizationMode::Ternary;
+  } else if (mode == "maybe") {
+    return QuantizationMode::Maybe;
+  } else if (mode == "mergeq") {
+    return QuantizationMode::Mergeq;
   }
   std::string msg;
   if (!tag.empty()) {
