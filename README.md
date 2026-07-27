@@ -48,11 +48,11 @@ That's it — `mode="ternary"` on the same `mx.quantize`, `mx.dequantize`,
 | `gather_qmm` (MoE) | correctness-first fallback | composed (`dequantize` + dense `gather_mm`) |
 
 Measured, not assumed — see [BENCHMARKS.md](BENCHMARKS.md) for full numbers,
-exact shapes, and reproduction steps (currently Apple M3 Max only; no other
-chip has been tested). Every fused GPU kernel beats the compose fallback it
-replaces, and the CPU SIMD kernel beats this codebase's own best comparable
-`affine` bits=4 kernel by 2.1-2.3x. All measurements use fp32 activations —
-fp16/bf16 comparisons haven't been benchmarked.
+exact shapes, and reproduction steps on **Apple M3 Max** and **Apple M1 Pro**
+(no other Apple Silicon chips tested yet). Every fused GPU kernel beats the
+compose fallback it replaces, and the CPU SIMD kernel beats this codebase's
+own best comparable `affine` bits=4 kernel by 1.8-2.3x. All measurements use
+fp32 activations — fp16/bf16 comparisons haven't been benchmarked.
 
 ## Building from source
 
