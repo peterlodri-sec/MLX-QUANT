@@ -963,23 +963,29 @@ void ternary_unpack_dense(
 // dense buffer -- the 2-bit -> signed-float unpack happens directly in
 // registers, fused into the multiply-accumulate, mirroring how
 // `_qmm_t_simd` fuses affine's dequant into its inner loop.
+// Deliberately scalar: a per-lane *variable* shift amount (operator>>
+// between two Simd<uint32_t,8>) and a vector-minus-scalar-literal
+// (Simd<float,8> - float) are both used by the ARM/Accelerate-backed
+// width-8 specialization on Apple Silicon, but aren't implemented by
+// every backend's own width-8 specialization (e.g. x86_64's AVX2-backed
+// one) -- unlike simd::load, which is core, portable MLX infrastructure
+// (see mlx/backend/cpu/simd/base_simd.h) used successfully throughout
+// this file already. Doing the unpack as 8 independent scalar shifts
+// into a plain array, then loading that array, avoids depending on
+// either operator while keeping the surrounding multiply-accumulate
+// loop (simd::load, vector +/*, simd::sum) fully vectorized and
+// portable.
 template <int Step>
 simd::Simd<float, 8> extract_ternary_simd(uint32_t word) {
   static_assert(Step == 0 || Step == 1);
-  if constexpr (Step == 0) {
-    constexpr std::array<uint32_t, 8> shifts_ = {{0, 2, 4, 6, 8, 10, 12, 14}};
-    auto shifts(*(simd::Simd<uint32_t, 8>*)&shifts_);
-    simd::Simd<uint32_t, 8> wi(word);
-    wi = (wi >> shifts) & 0x3;
-    return simd::Simd<float, 8>(wi) - 1.0f;
-  } else {
-    constexpr std::array<uint32_t, 8> shifts_ = {
-        {16, 18, 20, 22, 24, 26, 28, 30}};
-    auto shifts(*(simd::Simd<uint32_t, 8>*)&shifts_);
-    simd::Simd<uint32_t, 8> wi(word);
-    wi = (wi >> shifts) & 0x3;
-    return simd::Simd<float, 8>(wi) - 1.0f;
+  constexpr int base = Step == 0 ? 0 : 16;
+  float vals[8];
+#pragma clang loop unroll(full)
+  for (int i = 0; i < 8; i++) {
+    uint32_t code = (word >> (base + 2 * i)) & 0x3u;
+    vals[i] = static_cast<float>(code) - 1.0f;
   }
+  return simd::load<float, 8>(vals);
 }
 
 // Single row (M == 1) of the fused kernel -- also used as the remainder
