@@ -4,9 +4,8 @@ import argparse
 
 import mlx.core as mx
 import mlx.nn as nn
-from time_utils import time_fn
-
 from mlx.nn.layers.bitlinear import BitLinear
+from time_utils import time_fn
 
 B = 32
 T = 256
