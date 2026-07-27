@@ -4628,11 +4628,14 @@ void init_ops(nb::module_& m) {
         .. note::
 
           ``"ternary"`` has a native SIMD-fused kernel on the CPU backend,
-          and a real (unfused) Metal kernel backing ``quantize``/
-          ``dequantize`` on GPU. ``quantized_matmul`` with
-          ``mode="ternary"`` also works on the GPU backend, but composes
-          ``dequantize`` and a dense matmul rather than using a fused
-          kernel, since no fused ternary GPU matmul kernel exists yet.
+          and real fused Metal kernels on GPU covering ``quantize``/
+          ``dequantize``, ``quantized_matmul`` (both a fast decode-shaped
+          path and a tiled GEMM for large batches), and ``gather_qmm``
+          (composed from ``dequantize`` + the existing dense gather
+          matmul rather than a dedicated fused kernel). The only
+          remaining unfused case is a batched weight tensor
+          (``w.ndim() > 2``) passed to ``quantized_matmul``, which
+          composes ``dequantize`` and a dense matmul instead.
 
         Args:
           w (array): Array to be quantized
