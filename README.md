@@ -47,13 +47,12 @@ That's it — `mode="ternary"` on the same `mx.quantize`, `mx.dequantize`,
 | `quantized_matmul`, batched weights | correctness-first fallback | composed (`dequantize` + dense matmul) |
 | `gather_qmm` (MoE) | correctness-first fallback | composed (`dequantize` + dense `gather_mm`) |
 
-Measured, not assumed (see [CHANGELOG.md](CHANGELOG.md) for the full numbers
-and methodology, including exact shapes): the CPU SIMD kernel beats this
-codebase's own best comparable `affine` bits=4 kernel by 2.3-2.4x; the GPU
-`qmv_fast` kernel beats **dense fp32** GPU matmul by 1.6-2.8x at `M=1`
-(all measurements in this repo use fp32 activations — fp16/bf16 comparisons
-haven't been benchmarked); the GPU tiled GEMM is 1.25-1.7x faster than the
-compose fallback it replaces.
+Measured, not assumed — see [BENCHMARKS.md](BENCHMARKS.md) for full numbers,
+exact shapes, and reproduction steps (currently Apple M3 Max only; no other
+chip has been tested). Every fused GPU kernel beats the compose fallback it
+replaces, and the CPU SIMD kernel beats this codebase's own best comparable
+`affine` bits=4 kernel by 2.1-2.3x. All measurements use fp32 activations —
+fp16/bf16 comparisons haven't been benchmarked.
 
 ## Building from source
 
