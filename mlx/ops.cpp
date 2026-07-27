@@ -4754,6 +4754,40 @@ array quantized_matmul(
           inputs);
     }
 
+    // ternary_qmv is the general, bounds-checked counterpart to
+    // ternary_qmv_fast for shapes that don't meet its exact-multiple
+    // precondition: any K (a safe zero-padded/partial-byte tail handles
+    // the remainder) and any N (a "slide the last tile back" trick avoids
+    // a partial-tile write when N isn't a multiple of 8) -- mirrors
+    // fp_qmv_impl. Still transpose == true, non-batched weights only.
+    if (transpose && w.ndim() == 2) {
+      auto fallback = [group_size, bits, s](
+                          const std::vector<array>& inputs)
+          -> std::vector<array> {
+        auto& x = inputs[0];
+        auto& w = inputs[1];
+        auto& scales = inputs[2];
+        array w_dense = dequantize(
+            w,
+            scales,
+            std::nullopt,
+            group_size,
+            bits,
+            "ternary",
+            std::nullopt,
+            x.dtype(),
+            s);
+        return {matmul(x, swapaxes(w_dense, -1, -2, s), s)};
+      };
+      auto out_shape = inputs[0].shape();
+      out_shape.back() = w_outer_dims;
+      return array(
+          std::move(out_shape),
+          dtype,
+          std::make_shared<fast::TernaryQmv>(to_stream(s), fallback, group_size),
+          inputs);
+    }
+
     // ternary_qvm covers transpose == false (w stored (K, N)), non-batched
     // weights, with N a multiple of 32 -- ternary_qvm_impl's
     // values_per_thread is fixed at 32 (tn(2) * pack_factor(16), and

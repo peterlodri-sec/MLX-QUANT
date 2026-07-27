@@ -538,6 +538,55 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 y_ref = x @ w_hat
                 self.assert_ternary_gpu_allclose(y_q, y_ref)
 
+    def test_ternary_qmv_general(self):
+        # The general, bounds-checked ternary_qmv GPU kernel handles any K
+        # (a safe zero-padded/partial-byte tail for the K-block remainder)
+        # and any N (a "slide the last tile back" trick for N not a
+        # multiple of 8) for transpose=True, non-batched weights -- it's
+        # what mlx::quantized_matmul falls to whenever ternary_qmv_fast's
+        # exact-multiple (N%8==0, K%1024==0) precondition doesn't hold.
+        # Only batched weights still compose. Covers both of
+        # ternary_qmv_impl's branches: out_vec_size < 8 (small-N) and the
+        # "used_out_row" tile-shift for out_vec_size >= 8 but not %8.
+        if not mx.metal.is_available():
+            return
+        with mx.stream(mx.gpu):
+            for M, K, N, gs in [
+                (1, 512, 512, 64),  # K%512==0 but not %1024 -- was the bug shape
+                (1, 64, 64, 64),  # tiny K
+                (1, 192, 4, 64),  # small-N branch (N=4 < 8)
+                (8, 640, 13, 64),  # used_out_row branch (N=13, not %8)
+                (1, 1024, 8, 64),  # K%1024==0 but N==8 exactly (boundary)
+                (1, 96, 3, 32),  # tiny everything, N=3 < 8
+                (4, 320, 21, 32),  # N not %8, K not a multiple of 512
+                (1, 1056, 1, 32),  # N=1, extreme small-N
+            ]:
+                with self.subTest(M=M, K=K, N=N, gs=gs, path="fused-general"):
+                    x = mx.random.normal(shape=(M, K))
+                    w = mx.random.normal(shape=(N, K))
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        transpose=True,
+                    )
+                    y_ref = x @ w_hat.T
+                    self.assert_ternary_gpu_allclose(y_q, y_ref)
+
+            # Batched weights (w.ndim() > 2) -- the only remaining compose case
+            # for transpose=True now that ternary_qmv covers everything else.
+            with self.subTest(path="compose (batched weights)"):
+                x = mx.random.normal(shape=(4, 2, 128))
+                w = mx.random.normal(shape=(4, 256, 128))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=True,
+                )
+                y_ref = x @ mx.swapaxes(w_hat, -1, -2)
+                self.assert_ternary_gpu_allclose(y_q, y_ref)
+
     def test_qqmv(self):
         key = mx.random.key(0)
         k1, k2 = mx.random.split(key)

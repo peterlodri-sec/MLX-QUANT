@@ -153,6 +153,223 @@ inline U ternary_qdot(const device uint8_t* w, const thread U* x_thread, U scale
   return scale * accum;
 }
 
+// Same as ternary_qdot, but only reads/decodes the first N codes (ceil(N/4)
+// bytes) instead of the full values_per_thread -- required for the K-tail
+// block of ternary_qmv_impl below, where reading a full values_per_thread
+// worth of packed weight bytes past a row's own K range could read past the
+// end of the whole weight buffer for the very last output row (zero-padding
+// x_thread alone isn't enough: it makes the arithmetic contribution zero,
+// but does not stop the out-of-bounds *read* of w from happening).
+template <typename U, int values_per_thread>
+inline U ternary_qdot_safe(
+    const device uint8_t* w,
+    const thread U* x_thread,
+    U scale,
+    int N) {
+  U accum = 0;
+  int full_bytes = N / 4;
+  int rem = N % 4;
+  for (int b = 0; b < full_bytes; b++) {
+    uint8_t byte = w[b];
+    for (int j = 0; j < 4; j++) {
+      uint8_t code = (byte >> (2 * j)) & 0x03;
+      accum += x_thread[b * 4 + j] * (U(code) - U(1));
+    }
+  }
+  if (rem > 0) {
+    uint8_t byte = w[full_bytes];
+    for (int j = 0; j < rem; j++) {
+      uint8_t code = (byte >> (2 * j)) & 0x03;
+      accum += x_thread[full_bytes * 4 + j] * (U(code) - U(1));
+    }
+  }
+  return scale * accum;
+}
+
+template <typename T, typename U, int values_per_thread>
+inline void ternary_load_vector(const device T* x, thread U* x_thread) {
+#pragma clang loop unroll(full)
+  for (int i = 0; i < values_per_thread; i++) {
+    x_thread[i] = x[i];
+  }
+}
+
+template <typename T, typename U, int values_per_thread>
+inline void ternary_load_vector_safe(
+    const device T* x,
+    thread U* x_thread,
+    int N) {
+  for (int i = 0; i < N; i++) {
+    x_thread[i] = x[i];
+  }
+  for (int i = N; i < values_per_thread; i++) {
+    x_thread[i] = 0;
+  }
+}
+
+// Mirrors fp_qmv_impl (mlx/backend/metal/kernels/fp_quantized.h) -- the
+// general, bounds-checked qmv: any K (via ternary_load_vector_safe/
+// ternary_qdot_safe for the K-tail) and any N (via the two branches below --
+// one for out_vec_size smaller than a whole tile, one that shifts the last
+// tile back to avoid a partial-tile write), unlike ternary_qmv_fast_impl's
+// exact-multiple requirements. Same non-batched-only scope as
+// ternary_qmv_fast_impl.
+template <typename T, int group_size, int bits>
+METAL_FUNC void ternary_qmv_impl(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* x,
+    device T* y,
+    const constant int& in_vec_size,
+    const constant int& out_vec_size,
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  static_assert(bits == 2, "ternary quantization requires bits == 2");
+  constexpr int num_simdgroups = 2;
+  constexpr int results_per_simdgroup = 4;
+  constexpr int packs_per_thread = 1;
+  constexpr int pack_factor = 32 / bits; // codes per uint32 word
+  constexpr int bytes_per_pack = 4; // bytes per uint32 word
+
+  constexpr int values_per_thread = pack_factor * packs_per_thread;
+  constexpr int block_size = values_per_thread * SIMD_SIZE;
+  constexpr int scale_step_per_thread = group_size / values_per_thread;
+
+  const device uint8_t* ws = (const device uint8_t*)w;
+
+  typedef float U;
+
+  thread U x_thread[values_per_thread];
+  thread U result[results_per_simdgroup] = {0};
+
+  const int in_vec_size_w = in_vec_size * bytes_per_pack / pack_factor;
+  const int in_vec_size_g = in_vec_size / group_size;
+  const int out_row = tid.y * (num_simdgroups * results_per_simdgroup) +
+      simd_gid * results_per_simdgroup;
+  const int used_out_row = min(out_vec_size - results_per_simdgroup, out_row);
+
+  if (out_row >= out_vec_size) {
+    return;
+  }
+
+  if (out_vec_size < (num_simdgroups * results_per_simdgroup)) {
+    ws +=
+        out_row * in_vec_size_w + simd_lid * packs_per_thread * bytes_per_pack;
+    scales += out_row * in_vec_size_g + simd_lid / scale_step_per_thread;
+    x += tid.x * in_vec_size + simd_lid * values_per_thread;
+    y += tid.x * out_vec_size + out_row;
+
+    int k = 0;
+    for (; k < in_vec_size - block_size; k += block_size) {
+      ternary_load_vector<T, U, values_per_thread>(x, x_thread);
+
+      for (int row = 0;
+           row < results_per_simdgroup && out_row + row < out_vec_size;
+           row++) {
+        auto wl = (const device uint8_t*)(ws + row * in_vec_size_w);
+        const device T* sl = scales + row * in_vec_size_g;
+
+        U s = static_cast<U>(sl[0]);
+        result[row] += ternary_qdot<U, values_per_thread>(wl, x_thread, s);
+      }
+
+      ws += block_size * bytes_per_pack / pack_factor;
+      scales += block_size / group_size;
+      x += block_size;
+    }
+    const int remaining = clamp(
+        static_cast<int>(in_vec_size - k - simd_lid * values_per_thread),
+        0,
+        values_per_thread);
+    if (remaining > 0) {
+      ternary_load_vector_safe<T, U, values_per_thread>(
+          x, x_thread, remaining);
+
+      for (int row = 0;
+           row < results_per_simdgroup && out_row + row < out_vec_size;
+           row++) {
+        auto wl = (const device uint8_t*)(ws + row * in_vec_size_w);
+        const device T* sl = scales + row * in_vec_size_g;
+
+        U s = static_cast<U>(sl[0]);
+        result[row] +=
+            ternary_qdot_safe<U, values_per_thread>(wl, x_thread, s, remaining);
+      }
+    }
+
+    for (int row = 0;
+         row < results_per_simdgroup && out_row + row < out_vec_size;
+         row++) {
+      result[row] = simd_sum(result[row]);
+      if (simd_lid == 0) {
+        y[row] = static_cast<T>(result[row]);
+      }
+    }
+  } else {
+    ws += used_out_row * in_vec_size_w +
+        simd_lid * packs_per_thread * bytes_per_pack;
+    scales += used_out_row * in_vec_size_g + simd_lid / scale_step_per_thread;
+    x += tid.x * in_vec_size + simd_lid * values_per_thread;
+    y += tid.x * out_vec_size + used_out_row;
+
+    int k = 0;
+    for (; k < in_vec_size - block_size; k += block_size) {
+      ternary_load_vector<T, U, values_per_thread>(x, x_thread);
+
+      for (int row = 0; row < results_per_simdgroup; row++) {
+        auto wl = (const device uint8_t*)(ws + row * in_vec_size_w);
+        const device T* sl = scales + row * in_vec_size_g;
+
+        U s = static_cast<U>(sl[0]);
+        result[row] += ternary_qdot<U, values_per_thread>(wl, x_thread, s);
+      }
+
+      ws += block_size * bytes_per_pack / pack_factor;
+      scales += block_size / group_size;
+      x += block_size;
+    }
+    const int remaining = clamp(
+        static_cast<int>(in_vec_size - k - simd_lid * values_per_thread),
+        0,
+        values_per_thread);
+    if (remaining > 0) {
+      ternary_load_vector_safe<T, U, values_per_thread>(
+          x, x_thread, remaining);
+
+      for (int row = 0; row < results_per_simdgroup; row++) {
+        auto wl = (const device uint8_t*)(ws + row * in_vec_size_w);
+        const device T* sl = scales + row * in_vec_size_g;
+
+        U s = static_cast<U>(sl[0]);
+        result[row] +=
+            ternary_qdot_safe<U, values_per_thread>(wl, x_thread, s, remaining);
+      }
+    }
+    for (int row = 0; row < results_per_simdgroup; row++) {
+      result[row] = simd_sum(result[row]);
+      if (simd_lid == 0) {
+        y[row] = static_cast<T>(result[row]);
+      }
+    }
+  }
+}
+
+template <typename T, int group_size, int bits>
+[[kernel]] void ternary_qmv(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* x [[buffer(2)]],
+    device T* y [[buffer(3)]],
+    const constant int& in_vec_size [[buffer(4)]],
+    const constant int& out_vec_size [[buffer(5)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  ternary_qmv_impl<T, group_size, bits>(
+      w, scales, x, y, in_vec_size, out_vec_size, tid, simd_gid, simd_lid);
+}
+
 // Mirrors fp_qmv_fast_impl (mlx/backend/metal/kernels/fp_quantized.h) --
 // same threading model (2 simdgroups/threadgroup, 4 results/simdgroup,
 // simd_lid-based per-lane weight/activation offsetting, simd_sum reduction)
