@@ -22,6 +22,8 @@ Part of the **ayeOS mesh** — the GPU brain:
 
 Tested on **Apple M3 Max** and **Apple M1 Pro** (Metal 4). All 260 tests pass on both machines.
 
+**[GitHub Pages](https://8b-is.github.io/MLX-QUANT/)** | [CHANGELOG](CHANGELOG.md) | [Benchmarks](BENCHMARKS.md)
+
 <p align="center">
   <img src="assets/mlx-quant-ternary-diagram.png" alt="A weight matrix quantized to ternary values {-1, 0, +1}" width="320">
 </p>
