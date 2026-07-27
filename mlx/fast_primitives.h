@@ -361,6 +361,45 @@ class Quantize : public Custom {
   bool dequantize_;
 };
 
+// Fused ternary quantized_matmul fast path -- the non-batched-weight,
+// transpose == true, K%512==0, N%8==0 case (see ternary_qmv_fast in
+// mlx/backend/metal/kernels/ternary_quantized.h). GPU-only: mlx::
+// quantized_matmul (mlx/ops.cpp) only ever constructs this primitive when
+// that exact precondition holds and the target stream is the GPU; every
+// other ternary quantized_matmul shape/setting composes dequantize + the
+// existing dense matmul instead, so eval_cpu here should never run.
+// Inherits Custom's fallback-based vjp/jvp/vmap, so gradients differentiate
+// through the same dequantize + matmul fallback used for the general case
+// rather than needing their own implementation here.
+class TernaryQmvFast : public Custom {
+ public:
+  TernaryQmvFast(
+      Stream stream,
+      std::function<std::vector<array>(std::vector<array>)> fallback,
+      int group_size)
+      : Custom(stream, std::move(fallback)), group_size_(group_size) {}
+
+  void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override {
+    throw std::runtime_error(
+        "[TernaryQmvFast] GPU-only primitive; mlx::quantized_matmul should "
+        "never construct this for a CPU stream.");
+  }
+
+  void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override;
+
+  DEFINE_NAME(TernaryQmvFast);
+
+  bool is_equivalent(const Primitive& other) const override {
+    return group_size_ ==
+        static_cast<const TernaryQmvFast&>(other).group_size_;
+  }
+
+ private:
+  int group_size_;
+};
+
 using ScalarArg = std::variant<bool, int, float>;
 
 class CustomKernel : public Primitive {

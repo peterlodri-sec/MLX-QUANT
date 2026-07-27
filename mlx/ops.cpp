@@ -4705,15 +4705,55 @@ array quantized_matmul(
 
   if (qmode == QuantizationMode::Ternary &&
       to_stream(s).device == Device::gpu) {
-    // No fused ternary GPU matmul kernel exists yet -- qmv/qmv_fast/
-    // qmv_wide/qmm/qmm_splitk/qvm/qvm_split_k each need their own bespoke
-    // kernel family (see QuantizedMatmul::eval_gpu's dispatch tree in
-    // mlx/backend/metal/quantized.cpp), and partially covering that tree
-    // would leave some shape/dtype combinations reaching a kernel name
-    // that was never written. Compose a correct answer instead from the
-    // real ternary_dequantize Metal kernel (mlx/backend/metal/kernels/
-    // ternary_quantized.h) plus the existing dense GPU matmul, which
+    // A fused ternary_qmv_fast GPU kernel (mlx/backend/metal/kernels/
+    // ternary_quantized.h) covers exactly one shape: non-batched weights
+    // (w.ndim() == 2), transpose == true, N%8==0 (results_per_simdgroup(4)
+    // * num_simdgroups(2)), and K%1024==0. That 1024, NOT affine/fp's
+    // familiar 512, is ternary_qmv_fast_impl's own block_size
+    // (values_per_thread(32) * SIMD_SIZE(32)) -- ternary's bits=2 pack
+    // factor (32/2=16) is 2x affine/fp's bits=4 pack factor (32/4=8), so
+    // packs_per_thread(2) * pack_factor(16) = 32 values/thread, double
+    // fp_qmv_fast_impl's 16. Reusing affine's %512 here silently passed K
+    // values that are a multiple of 512 but not 1024 (e.g. K=512 itself)
+    // into a kernel with no K-remainder bounds-checking, reading out of
+    // bounds for the back half of each simdgroup's lanes -- caught by
+    // testing group sizes beyond the one that happened to still look
+    // right by chance. Every other shape/setting -- batched weights,
+    // transpose == false, or either divisibility check failing -- would
+    // need its own bespoke kernel (qmv/qmv_wide/qmm/qmm_splitk/qvm/
+    // qvm_split_k, see QuantizedMatmul::eval_gpu's dispatch tree), so it
+    // composes dequantize + the existing dense GPU matmul instead, which
     // handles every shape and both transpose settings uniformly.
+    if (transpose && w.ndim() == 2 && w_outer_dims % 8 == 0 &&
+        w_inner_dims % 1024 == 0) {
+      auto fallback = [group_size, bits, s](
+                          const std::vector<array>& inputs)
+          -> std::vector<array> {
+        auto& x = inputs[0];
+        auto& w = inputs[1];
+        auto& scales = inputs[2];
+        array w_dense = dequantize(
+            w,
+            scales,
+            std::nullopt,
+            group_size,
+            bits,
+            "ternary",
+            std::nullopt,
+            x.dtype(),
+            s);
+        return {matmul(x, swapaxes(w_dense, -1, -2, s), s)};
+      };
+      auto out_shape = inputs[0].shape();
+      out_shape.back() = w_outer_dims;
+      return array(
+          std::move(out_shape),
+          dtype,
+          std::make_shared<fast::TernaryQmvFast>(
+              to_stream(s), fallback, group_size),
+          inputs);
+    }
+
     array w_dense = dequantize(
         w,
         scales,

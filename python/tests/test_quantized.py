@@ -390,6 +390,81 @@ class TestQuantized(mlx_tests.MLXTestCase):
                         y_ref = x @ w_hat.T
                         self.assertTrue(mx.allclose(y_q, y_ref, atol=2e-2, rtol=2e-2))
 
+    def test_ternary_qmv_fast(self):
+        # The fused ternary_qmv_fast GPU kernel only engages for a specific
+        # shape (mlx/ops.cpp): non-batched weights, transpose=True, N%8==0,
+        # and K%1024==0 -- 1024 is ternary_qmv_fast_impl's own block_size
+        # (values_per_thread(32) * SIMD_SIZE(32)), NOT affine/fp's familiar
+        # 512, since ternary's bits=2 pack factor is 2x theirs. A first
+        # version of this gate used %512 by mistake, which let K=512 (not
+        # actually a multiple of the kernel's real block_size) through and
+        # caused out-of-bounds reads for half of each simdgroup's lanes --
+        # caught here by testing more than one group size on a fixed K,
+        # since group_size=64 alone happened to still look correct by luck.
+        if not mx.metal.is_available():
+            return
+        with mx.stream(mx.gpu):
+            for M, K, N, gs in [
+                (1, 1024, 512, 32),
+                (1, 1024, 512, 64),
+                (1, 1024, 512, 128),
+                (4, 1024, 256, 64),
+                (1, 2048, 8, 64),
+            ]:
+                with self.subTest(M=M, K=K, N=N, gs=gs, path="fused"):
+                    x = mx.random.normal(shape=(M, K))
+                    w = mx.random.normal(shape=(N, K))
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        transpose=True,
+                    )
+                    y_ref = x @ w_hat.T
+                    self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+            # K=512 divides affine/fp's %512 gate but not ternary_qmv_fast's
+            # real %1024 block_size -- must fall through to the compose
+            # fallback, not the fused kernel, and still be correct.
+            for gs in [32, 64, 128]:
+                with self.subTest(K=512, gs=gs, path="compose (K not %1024)"):
+                    x = mx.random.normal(shape=(4, 512))
+                    w = mx.random.normal(shape=(512, 512))
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        transpose=True,
+                    )
+                    y_ref = x @ w_hat.T
+                    self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+            # N not a multiple of 8 -- falls through to compose.
+            with self.subTest(path="compose (N not %8)"):
+                x = mx.random.normal(shape=(2, 1024))
+                w = mx.random.normal(shape=(17, 1024))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=True,
+                )
+                y_ref = x @ w_hat.T
+                self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
+            # Batched weights (w.ndim() > 2) -- falls through to compose.
+            with self.subTest(path="compose (batched weights)"):
+                x = mx.random.normal(shape=(4, 2, 1024))
+                w = mx.random.normal(shape=(4, 512, 1024))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=True,
+                )
+                y_ref = x @ mx.swapaxes(w_hat, -1, -2)
+                self.assertTrue(mx.allclose(y_q, y_ref, atol=1e-4, rtol=1e-4))
+
     def test_qqmv(self):
         key = mx.random.key(0)
         k1, k2 = mx.random.split(key)

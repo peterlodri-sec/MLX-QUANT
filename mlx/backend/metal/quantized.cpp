@@ -1854,6 +1854,52 @@ void fast::Quantize::eval_gpu(
   compute_encoder.dispatch_threads(grid_dims, group_dims);
 }
 
+void fast::TernaryQmvFast::eval_gpu(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  auto& s = stream();
+  auto& d = metal::device(s.device);
+  auto& out = outputs[0];
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  // mlx::quantized_matmul only ever builds this primitive for non-batched
+  // weights (w.ndim() == 2), so M is just x's row count with all of x's
+  // leading dims flattened -- no adjust_matrix_offsets/batch machinery
+  // needed, unlike qmv()/qmv_fast's shared (affine + fp) dispatch path.
+  array x = ensure_row_contiguous_matrix(inputs[0], d, s);
+  array w = ensure_row_contiguous_matrix(inputs[1], d, s);
+  array scales = ensure_row_contiguous_matrix(inputs[2], d, s);
+
+  int K = x.shape(-1);
+  int N = out.shape(-1);
+
+  constexpr int bn = 8;
+  constexpr int bk = 32;
+  MTL::Size group_dims(bk, 2, 1);
+  MTL::Size grid_dims(x.size() / K, (N + bn - 1) / bn, 1);
+
+  std::string kname;
+  kname.reserve(64);
+  std::string type_string = get_type_string(x.dtype());
+  concatenate(
+      kname, "ternary_qmv_fast_", type_string, "_gs_", group_size_, "_b_2");
+  auto kernel = get_quantized_kernel_wrapped(
+      d, kname, "qmv_fast", "ternary", type_string, group_size_, 2);
+
+  auto& compute_encoder = metal::get_command_encoder(s);
+  compute_encoder.set_compute_pipeline_state(kernel);
+
+  int c = 0;
+  compute_encoder.set_input_array(w, c++);
+  compute_encoder.set_input_array(scales, c++);
+  compute_encoder.set_input_array(x, c++);
+  compute_encoder.set_output_array(out, c++);
+  compute_encoder.set_bytes(K, c++);
+  compute_encoder.set_bytes(N, c++);
+
+  compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
+}
+
 void fast::ConvertFP8::eval_gpu(
     const std::vector<array>& inputs,
     std::vector<array>& outputs) {
