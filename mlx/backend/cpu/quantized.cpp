@@ -963,29 +963,35 @@ void ternary_unpack_dense(
 // dense buffer -- the 2-bit -> signed-float unpack happens directly in
 // registers, fused into the multiply-accumulate, mirroring how
 // `_qmm_t_simd` fuses affine's dequant into its inner loop.
-// Deliberately scalar: a per-lane *variable* shift amount (operator>>
-// between two Simd<uint32_t,8>) and a vector-minus-scalar-literal
-// (Simd<float,8> - float) are both used by the ARM/Accelerate-backed
-// width-8 specialization on Apple Silicon, but aren't implemented by
-// every backend's own width-8 specialization (e.g. x86_64's AVX2-backed
-// one) -- unlike simd::load, which is core, portable MLX infrastructure
-// (see mlx/backend/cpu/simd/base_simd.h) used successfully throughout
-// this file already. Doing the unpack as 8 independent scalar shifts
-// into a plain array, then loading that array, avoids depending on
-// either operator while keeping the surrounding multiply-accumulate
-// loop (simd::load, vector +/*, simd::sum) fully vectorized and
-// portable.
-template <int Step>
-simd::Simd<float, 8> extract_ternary_simd(uint32_t word) {
+// S must be a template parameter here, not a hardcoded literal 8: a
+// function template's return type is only "dependent" (its
+// completeness deferred to instantiation time) if it actually depends
+// on a template parameter. `simd::Simd<float, 8>` as a literal return
+// type is non-dependent -- the compiler must verify it's a complete
+// type just from parsing this template's definition, regardless of
+// whether Step (an int, unrelated to the type) is ever instantiated,
+// and regardless of whether any caller's `if constexpr` ever takes the
+// SIMD branch at all. On this session's only available hardware (Apple
+// Silicon), Simd<float, 8> happens to always be complete, so a hardcoded
+// literal 8 compiled fine locally -- but silently assumed every backend
+// provides a width-8 float specialization. The first time CI actually
+// ran a Linux/x86_64 build (see the Blacksmith workflow), it didn't:
+// "return type ... is incomplete". Making S a real template parameter,
+// matching the S = simd::max_size<T> the caller already computes, makes
+// the return type genuinely dependent, so its completeness is only
+// checked when a caller's own if-constexpr gate actually instantiates
+// it for a T/backend combination where that width really exists.
+template <int Step, int S>
+simd::Simd<float, S> extract_ternary_simd(uint32_t word) {
   static_assert(Step == 0 || Step == 1);
   constexpr int base = Step == 0 ? 0 : 16;
-  float vals[8];
+  float vals[S];
 #pragma clang loop unroll(full)
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < S; i++) {
     uint32_t code = (word >> (base + 2 * i)) & 0x3u;
     vals[i] = static_cast<float>(code) - 1.0f;
   }
-  return simd::load<float, 8>(vals);
+  return simd::load<float, S>(vals);
 }
 
 // Single row (M == 1) of the fused kernel -- also used as the remainder
@@ -1013,12 +1019,12 @@ void _ternary_qmm_t_simd_row(
       for (int wg = 0; wg < words_per_group; wg++) {
         uint32_t word = *w_local++;
 
-        auto codes0 = extract_ternary_simd<0>(word) * scale;
+        auto codes0 = extract_ternary_simd<0, S>(word) * scale;
         simd::Simd<float, S> x0 = simd::load<T, S>(x_local);
         acc = acc + x0 * codes0;
         x_local += S;
 
-        auto codes1 = extract_ternary_simd<1>(word) * scale;
+        auto codes1 = extract_ternary_simd<1, S>(word) * scale;
         simd::Simd<float, S> x1 = simd::load<T, S>(x_local);
         acc = acc + x1 * codes1;
         x_local += S;
@@ -1077,8 +1083,8 @@ void _ternary_qmm_t_simd(
         T scale = *scales_local++;
         for (int wg = 0; wg < words_per_group; wg++) {
           uint32_t word = *w_local++;
-          auto codes0 = extract_ternary_simd<0>(word) * scale;
-          auto codes1 = extract_ternary_simd<1>(word) * scale;
+          auto codes0 = extract_ternary_simd<0, S>(word) * scale;
+          auto codes1 = extract_ternary_simd<1, S>(word) * scale;
           for (int t = 0; t < MTILE; t++) {
             simd::Simd<float, S> x0 = simd::load<T, S>(x_rows_local[t]);
             acc[t] = acc[t] + x0 * codes0;
