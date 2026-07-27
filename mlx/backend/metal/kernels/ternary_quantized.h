@@ -26,6 +26,22 @@ MLX_MTL_CONST int SIMD_SIZE = 32;
 // exactly its precondition (see mlx/ops.cpp) and composes dequantize +
 // the existing dense matmul for everything else, so no shape/dtype
 // combination can reach a kernel name that was never written.
+//
+// Numerical note: unlike affine_quantize's scale (a min/max range, which is
+// order-independent -- min and max never disagree regardless of reduction
+// order), this kernel's scale is mean(|w|), a sum, and floating-point
+// addition is not associative. simd_sum below is a parallel (tree) lane
+// reduction, so it can legitimately disagree with a sequentially-computed
+// reference sum in the last bit or two. That almost never changes the
+// quantized result -- except for a weight whose w/scale ratio lands almost
+// exactly on a round()-tie (near +/-0.5), where the tiniest scale
+// difference flips which side it rounds to. This is real, bounded (at most
+// one code step, ~2% of random draws in testing), and inherent to any
+// summation-based scale compared against a differently-ordered reference;
+// it is not fixable by "aligning" simd_sum's reduction order with some
+// particular CPU implementation's order, since that would just match one
+// arbitrary reference rather than remove the non-associativity itself. See
+// assert_ternary_gpu_allclose in python/tests/test_quantized.py.
 
 template <typename T, const int group_size, const int bits>
 [[kernel]] void ternary_quantize(

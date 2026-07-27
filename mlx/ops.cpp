@@ -5699,14 +5699,6 @@ array gather_qmm(
 
   auto [out_type, qmode] =
       validate_mode_with_type("gather_qmm", scales, biases, std::nullopt, mode);
-  if (qmode == QuantizationMode::Ternary) {
-    // Gather-based (MoE, per-token expert weight selection) ternary matmul
-    // is real follow-on work, not Stage 1 scope, on both CPU and GPU -- see
-    // the matching CPU-side throw in GatherQMM::eval_cpu.
-    throw std::invalid_argument(
-        "[gather_qmm] ternary quantization is not yet supported for "
-        "gather-based (indexed) quantized matmul.");
-  }
   auto [group_size, bits] =
       quantization_params_from_mode(qmode, group_size_, bits_);
   auto [w_inner_dims, w_outer_dims] = extract_quantized_matmul_dims(
@@ -5748,6 +5740,31 @@ array gather_qmm(
 
   lhs_indices = astype(lhs_indices, uint32, s);
   rhs_indices = astype(rhs_indices, uint32, s);
+
+  if (qmode == QuantizationMode::Ternary) {
+    // No native gather_qmm kernel exists for ternary (CPU or GPU) yet --
+    // compose a correct answer from the real ternary_dequantize kernel
+    // (mirrors mlx::quantized_matmul's own compose path) plus the
+    // existing dense gather_mm op, which already implements the
+    // per-token/per-expert selection semantics generically.
+    array w_dense = dequantize(
+        w,
+        scales,
+        std::nullopt,
+        group_size,
+        bits,
+        "ternary",
+        std::nullopt,
+        out_type,
+        s);
+    return gather_mm(
+        astype(x, out_type, s),
+        transpose ? swapaxes(w_dense, -1, -2, s) : w_dense,
+        lhs_indices,
+        rhs_indices,
+        sorted_indices,
+        s);
+  }
 
   // Compute the full output shape
   auto out_shape = lhs_indices.shape();
