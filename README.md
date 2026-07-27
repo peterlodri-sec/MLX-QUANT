@@ -10,6 +10,18 @@ Apple Silicon GPU (Metal) — maintained by [8b-is](https://github.com/8b-is).
 This fork is not intended to be upstreamed; see [CHANGELOG.md](CHANGELOG.md)
 for the full history of what's been added and why.
 
+Part of the **ayeOS mesh** — the GPU brain:
+
+| Layer | Project |
+|-------|---------|
+| CPU (hearth) | [kernel8](https://github.com/8b-is/kernel8) |
+| **GPU (brain)** | MLX-QUANT (this repo) |
+| Coord | [vaked](https://github.com/8b-is/vaked) |
+| Viz | [mlx-quant-viz](https://github.com/8b-is/mlx-quant-viz) |
+| Daemon | [ayeOS](https://github.com/8b-is/ayeos) |
+
+Tested on **Apple M3 Max** and **Apple M1 Pro** (Metal 4). All 260 tests pass on both machines.
+
 <p align="center">
   <img src="assets/mlx-quant-ternary-diagram.png" alt="A weight matrix quantized to ternary values {-1, 0, +1}" width="320">
 </p>
