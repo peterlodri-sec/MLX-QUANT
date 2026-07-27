@@ -1,3 +1,78 @@
+<p align="center">
+  <img src="assets/mlx-quant-hero.png" alt="MLX-QUANT: continuous weights collapsing into ternary states" width="100%">
+</p>
+
+# MLX-QUANT
+
+**A standalone fork of [MLX](https://github.com/ml-explore/mlx) adding native ternary
+(BitNet b1.58) quantization**, with real fused kernels on both CPU (SIMD) and
+Apple Silicon GPU (Metal) — maintained by [8b-is](https://github.com/8b-is).
+This fork is not intended to be upstreamed; see [CHANGELOG.md](CHANGELOG.md)
+for the full history of what's been added and why.
+
+<p align="center">
+  <img src="assets/mlx-quant-ternary-diagram.png" alt="A weight matrix quantized to ternary values {-1, 0, +1}" width="320">
+</p>
+
+## What's a ternary weight?
+
+Ternary quantization (from the [BitNet b1.58 paper](https://arxiv.org/abs/2402.17764))
+stores every weight as one of exactly three values: **-1, 0, or +1**, plus a
+single real-valued scale per group. That's roughly 2 bits per weight — 16x
+smaller than fp32, 8x smaller than fp16 — while keeping the *real* zeros that
+distinguish it from a full-precision-weights training simulation:
+
+```python
+import mlx.core as mx
+
+w = mx.random.normal((4096, 4096))
+w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+
+x = mx.random.normal((1, 4096))
+y = mx.quantized_matmul(x, w_q, scales, group_size=64, bits=2, mode="ternary")
+```
+
+That's it — `mode="ternary"` on the same `mx.quantize`, `mx.dequantize`,
+`mx.quantized_matmul`, and `mx.gather_qmm` API MLX already exposes for
+`"affine"` and the `"mxfp4"`/`"mxfp8"`/`"nvfp4"` family.
+
+## What's actually fused vs. composed
+
+| Op | CPU | GPU (Metal) |
+|---|---|---|
+| `quantize` / `dequantize` | native SIMD kernel | native kernel |
+| `quantized_matmul`, decode (`M=1`, `nn.Linear`-style) | M-tiled SIMD kernel | fused `qmv_fast` kernel |
+| `quantized_matmul`, general shape | M-tiled SIMD kernel | fused `qmv`/`qvm` kernel |
+| `quantized_matmul`, large batch (`M >= 32`) | M-tiled SIMD kernel | fused tiled GEMM (`qmm_t`, real `steel::BlockMMA` integration) |
+| `quantized_matmul`, batched weights | correctness-first fallback | composed (`dequantize` + dense matmul) |
+| `gather_qmm` (MoE) | correctness-first fallback | composed (`dequantize` + dense `gather_mm`) |
+
+Measured, not assumed (see [CHANGELOG.md](CHANGELOG.md) for the full numbers
+and methodology, including exact shapes): the CPU SIMD kernel beats this
+codebase's own best comparable `affine` bits=4 kernel by 2.3-2.4x; the GPU
+`qmv_fast` kernel beats **dense fp32** GPU matmul by 1.6-2.8x at `M=1`
+(all measurements in this repo use fp32 activations — fp16/bf16 comparisons
+haven't been benchmarked); the GPU tiled GEMM is 1.25-1.7x faster than the
+compose fallback it replaces.
+
+## Building from source
+
+This fork isn't published to PyPI. Build the Python extension from a clone:
+
+```bash
+git clone https://github.com/8b-is/MLX-QUANT.git
+cd MLX-QUANT
+pip install -e .
+```
+
+Building the C++ library and test suite follows upstream MLX's own
+[build documentation](https://ml-explore.github.io/mlx/build/html/install.html) —
+nothing about the build system itself changed.
+
+---
+
+*Everything below this line is the original MLX project README, unmodified.*
+
 # MLX
 
 [**Quickstart**](#quickstart) | [**Installation**](#installation) |
