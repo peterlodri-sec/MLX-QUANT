@@ -2,6 +2,7 @@
 
 // clang-format off
 #include "mlx/backend/metal/kernels/utils.h"
+#include "mlx/backend/metal/kernels/steel/gemm/gemm.h"
 #include "mlx/backend/metal/kernels/ternary_quantized.h"
 
 #define instantiate_ternary_quantized(name, type, group_size, bits) \
@@ -17,7 +18,21 @@
   instantiate_ternary_quantized(dequantize, type, group_size, bits) \
   instantiate_ternary_quantized(qmv_fast, type, group_size, bits)   \
   instantiate_ternary_quantized(qvm, type, group_size, bits)        \
-  instantiate_ternary_quantized(qmv, type, group_size, bits)
+  instantiate_ternary_quantized(qmv, type, group_size, bits)        \
+  instantiate_ternary_qmm_t_wrap(type, group_size, bits)
+
+#define instantiate_ternary_qmm_t(type, group_size, bits, aligned_N)        \
+  instantiate_kernel(                                                       \
+      "ternary_qmm_t_" #type "_gs_" #group_size "_b_" #bits "_alN_" #aligned_N, \
+      ternary_qmm_t,                                                        \
+      type,                                                                 \
+      group_size,                                                           \
+      bits,                                                                 \
+      aligned_N)
+
+#define instantiate_ternary_qmm_t_wrap(type, group_size, bits) \
+  instantiate_ternary_qmm_t(type, group_size, bits, true)      \
+  instantiate_ternary_qmm_t(type, group_size, bits, false)
 
 #define instantiate_ternary_quantized_types(group_size, bits)      \
   instantiate_ternary_quantized_funcs(float, group_size, bits)     \

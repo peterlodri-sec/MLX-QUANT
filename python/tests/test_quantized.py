@@ -587,6 +587,81 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 y_ref = x @ mx.swapaxes(w_hat, -1, -2)
                 self.assert_ternary_gpu_allclose(y_q, y_ref)
 
+    def test_ternary_qmm_gemm(self):
+        # The tiled GEMM ternary_qmm_t GPU kernel (mirrors quantized.h's
+        # QuantizedBlockLoader/qmm_t_impl/affine_qmm_t) engages for
+        # transpose=True, non-batched weights, M >= 32 (mlx/ops.cpp) --
+        # decodes each weight group once per BM(32)-row tile and reuses it
+        # across all 32 rows via threadgroup memory, unlike ternary_qmv*
+        # which re-decodes per row. Covers aligned and unaligned M and N
+        # (M/N not multiples of 32 exercise load_safe/store_result_safe).
+        #
+        # At large K (e.g. 4096, a 128-iteration accumulation), a single
+        # mis-quantized weight from the same simd_sum-vs-sequential-sum
+        # tie-breaking property documented in assert_ternary_gpu_allclose
+        # now shows up in EVERY one of the M rows that share that weight
+        # column (GEMV-style kernels only ever showed it in one row, since
+        # M=1 there) -- confirmed by direct inspection (traced a worst-case
+        # run down to exactly 1 mismatched weight per affected output row,
+        # affecting 2 of 4096 columns across all rows). assert_ternary_gpu_
+        # allclose's bounded-outlier-fraction check already accounts for
+        # this scaling correctly (0.05% bad vs a 2% threshold), so no
+        # special-casing is needed here, just the same helper as everywhere
+        # else in this file.
+        if not mx.metal.is_available():
+            return
+        with mx.stream(mx.gpu):
+            for M, K, N, gs in [
+                (32, 512, 512, 64),
+                (64, 1024, 256, 64),
+                (128, 4096, 4096, 64),  # large-K accumulation, see above
+                (33, 512, 512, 32),
+                (32, 64, 32, 64),
+                (100, 320, 640, 32),
+                (32, 96, 17, 32),  # N not %32 -- unaligned_N path
+                (37, 96, 48, 32),  # M and N both not %32 -- fully unaligned
+                (32, 128, 128, 128),
+            ]:
+                with self.subTest(M=M, K=K, N=N, gs=gs, path="qmm_t"):
+                    x = mx.random.normal(shape=(M, K))
+                    w = mx.random.normal(shape=(N, K))
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        transpose=True,
+                    )
+                    y_ref = x @ w_hat.T
+                    self.assert_ternary_gpu_allclose(y_q, y_ref)
+
+            # M just under the 32 threshold -- must use ternary_qmv, not
+            # ternary_qmm_t, and still be correct.
+            with self.subTest(M=31, path="qmv (below qmm_t threshold)"):
+                x = mx.random.normal(shape=(31, 1024))
+                w = mx.random.normal(shape=(512, 1024))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=True,
+                )
+                y_ref = x @ w_hat.T
+                self.assert_ternary_gpu_allclose(y_q, y_ref)
+
+            # Batched weights with large M -- ternary_qmm_t is non-batched
+            # only, must still fall through to compose.
+            with self.subTest(path="compose (batched weights, large M)"):
+                x = mx.random.normal(shape=(4, 40, 1024))
+                w = mx.random.normal(shape=(4, 512, 1024))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=True,
+                )
+                y_ref = x @ mx.swapaxes(w_hat, -1, -2)
+                self.assert_ternary_gpu_allclose(y_q, y_ref)
+
     def test_qqmv(self):
         key = mx.random.key(0)
         k1, k2 = mx.random.split(key)

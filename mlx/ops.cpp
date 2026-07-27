@@ -4705,6 +4705,46 @@ array quantized_matmul(
 
   if (qmode == QuantizationMode::Ternary &&
       to_stream(s).device == Device::gpu) {
+    // ternary_qmm_t (tiled GEMM, mirrors quantized.h's qmm_t_impl) decodes
+    // each weight group once per BM(32)-row tile and reuses it across all
+    // 32 rows via threadgroup memory, instead of re-decoding per row like
+    // ternary_qmv_fast/ternary_qmv do -- a real win once M is large enough
+    // to fill at least one tile, pure overhead below that. Gated on
+    // w.ndim() == 2 (non-batched) and M >= 32 (BM's own tile size) as an
+    // initial, principled threshold pending a benchmark to confirm/tune
+    // the crossover point. K % 32 == 0 is not checked explicitly: it's
+    // automatically guaranteed for any validly-quantized ternary w, since
+    // group_size is always a multiple of 32 and quantize requires
+    // K % group_size == 0 (same reasoning as ternary_qvm's N % 32 gate) --
+    // qmm_t_impl itself has no K-tail loop at all and assumes this.
+    if (transpose && w.ndim() == 2 && x.size() / w_inner_dims >= 32) {
+      auto fallback = [group_size, bits, s](
+                          const std::vector<array>& inputs)
+          -> std::vector<array> {
+        auto& x = inputs[0];
+        auto& w = inputs[1];
+        auto& scales = inputs[2];
+        array w_dense = dequantize(
+            w,
+            scales,
+            std::nullopt,
+            group_size,
+            bits,
+            "ternary",
+            std::nullopt,
+            x.dtype(),
+            s);
+        return {matmul(x, swapaxes(w_dense, -1, -2, s), s)};
+      };
+      auto out_shape = inputs[0].shape();
+      out_shape.back() = w_outer_dims;
+      return array(
+          std::move(out_shape),
+          dtype,
+          std::make_shared<fast::TernaryQmm>(to_stream(s), fallback, group_size),
+          inputs);
+    }
+
     // A fused ternary_qmv_fast GPU kernel (mlx/backend/metal/kernels/
     // ternary_quantized.h) covers exactly one shape: non-batched weights
     // (w.ndim() == 2), transpose == true, N%8==0 (results_per_simdgroup(4)

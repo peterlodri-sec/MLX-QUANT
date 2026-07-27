@@ -465,6 +465,39 @@ class TernaryQmv : public Custom {
   int group_size_;
 };
 
+// Ternary tiled GEMM (large-M matmul) for transpose == true, non-batched
+// weights (see ternary_qmm_t in mlx/backend/metal/kernels/
+// ternary_quantized.h -- mirrors quantized.h's QuantizedBlockLoader/
+// qmm_t_impl/affine_qmm_t minus bias and minus batched-weight support).
+// Same GPU-only / fallback-based-autodiff shape as TernaryQmvFast above.
+class TernaryQmm : public Custom {
+ public:
+  TernaryQmm(
+      Stream stream,
+      std::function<std::vector<array>(std::vector<array>)> fallback,
+      int group_size)
+      : Custom(stream, std::move(fallback)), group_size_(group_size) {}
+
+  void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override {
+    throw std::runtime_error(
+        "[TernaryQmm] GPU-only primitive; mlx::quantized_matmul should "
+        "never construct this for a CPU stream.");
+  }
+
+  void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
+      override;
+
+  DEFINE_NAME(TernaryQmm);
+
+  bool is_equivalent(const Primitive& other) const override {
+    return group_size_ == static_cast<const TernaryQmm&>(other).group_size_;
+  }
+
+ private:
+  int group_size_;
+};
+
 using ScalarArg = std::variant<bool, int, float>;
 
 class CustomKernel : public Primitive {

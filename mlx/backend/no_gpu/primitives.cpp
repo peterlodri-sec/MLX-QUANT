@@ -174,6 +174,7 @@ NO_GPU_MULTI(Quantize)
 NO_GPU_MULTI(TernaryQmvFast)
 NO_GPU_MULTI(TernaryQvm)
 NO_GPU_MULTI(TernaryQmv)
+NO_GPU_MULTI(TernaryQmm)
 NO_GPU_MULTI(CustomKernel)
 } // namespace fast
 
