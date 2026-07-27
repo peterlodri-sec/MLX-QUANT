@@ -15,7 +15,8 @@
 #define instantiate_ternary_quantized_funcs(type, group_size, bits) \
   instantiate_ternary_quantized(quantize, type, group_size, bits)   \
   instantiate_ternary_quantized(dequantize, type, group_size, bits) \
-  instantiate_ternary_quantized(qmv_fast, type, group_size, bits)
+  instantiate_ternary_quantized(qmv_fast, type, group_size, bits)   \
+  instantiate_ternary_quantized(qvm, type, group_size, bits)
 
 #define instantiate_ternary_quantized_types(group_size, bits)      \
   instantiate_ternary_quantized_funcs(float, group_size, bits)     \

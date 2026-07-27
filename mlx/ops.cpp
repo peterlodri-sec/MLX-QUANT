@@ -4754,6 +4754,44 @@ array quantized_matmul(
           inputs);
     }
 
+    // ternary_qvm covers transpose == false (w stored (K, N)), non-batched
+    // weights, with N a multiple of 32 -- ternary_qvm_impl's
+    // values_per_thread is fixed at 32 (tn(2) * pack_factor(16), and
+    // pack_factor = 32/bits is always 16 since bits is always 2 here)
+    // regardless of group_size, and like ternary_qmv_fast_impl, its final
+    // write loop has no per-column bounds check, so a group of 32 output
+    // columns straddling the end of a non-multiple-of-32 N would write
+    // past the buffer. Unlike K in ternary_qmv_fast_impl, K here has no
+    // divisibility requirement -- qvm_impl's own "remaining" branch
+    // (mirrored in ternary_qvm_impl) already handles any K correctly.
+    if (!transpose && w.ndim() == 2 && w_outer_dims % 32 == 0) {
+      auto fallback = [group_size, bits, s](
+                          const std::vector<array>& inputs)
+          -> std::vector<array> {
+        auto& x = inputs[0];
+        auto& w = inputs[1];
+        auto& scales = inputs[2];
+        array w_dense = dequantize(
+            w,
+            scales,
+            std::nullopt,
+            group_size,
+            bits,
+            "ternary",
+            std::nullopt,
+            x.dtype(),
+            s);
+        return {matmul(x, w_dense, s)};
+      };
+      auto out_shape = inputs[0].shape();
+      out_shape.back() = w_outer_dims;
+      return array(
+          std::move(out_shape),
+          dtype,
+          std::make_shared<fast::TernaryQvm>(to_stream(s), fallback, group_size),
+          inputs);
+    }
+
     array w_dense = dequantize(
         w,
         scales,

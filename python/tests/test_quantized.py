@@ -491,6 +491,53 @@ class TestQuantized(mlx_tests.MLXTestCase):
                 y_ref = x @ mx.swapaxes(w_hat, -1, -2)
                 self.assert_ternary_gpu_allclose(y_q, y_ref)
 
+    def test_ternary_qvm(self):
+        # The fused ternary_qvm GPU kernel covers transpose=False,
+        # non-batched weights (mlx/ops.cpp gates on w.ndim() == 2 and
+        # N % 32 == 0 -- ternary_qvm_impl's values_per_thread is fixed at
+        # 32 regardless of group_size, and its final write loop has no
+        # per-column bounds check). N % 32 == 0 is actually guaranteed by
+        # mx.quantize itself for any valid ternary w here: group_size is
+        # always one of {32, 64, 128} (all multiples of 32) and quantize
+        # requires N % group_size == 0, so N % 32 == 0 follows -- there is
+        # no reachable "N not %32" fallback case to test, unlike
+        # ternary_qmv_fast's K%1024 gate.
+        if not mx.metal.is_available():
+            return
+        with mx.stream(mx.gpu):
+            for M, K, N, gs in [
+                (1, 512, 512, 64),
+                (1, 300, 64, 64),
+                (4, 1024, 256, 32),
+                (8, 200, 32, 32),
+                (1, 1000, 128, 128),
+                (1, 33, 32, 32),
+            ]:
+                with self.subTest(M=M, K=K, N=N, gs=gs, path="fused"):
+                    x = mx.random.normal(shape=(M, K))
+                    w = mx.random.normal(shape=(K, N))
+                    w_q, scales = mx.quantize(w, group_size=gs, bits=2, mode="ternary")
+                    w_hat = self.ternary_round_clip_reference(w, gs)
+                    y_q = mx.quantized_matmul(
+                        x, w_q, scales, group_size=gs, bits=2, mode="ternary",
+                        transpose=False,
+                    )
+                    y_ref = x @ w_hat
+                    self.assert_ternary_gpu_allclose(y_q, y_ref)
+
+            # Batched weights (w.ndim() > 2) -- falls through to compose.
+            with self.subTest(path="compose (batched weights)"):
+                x = mx.random.normal(shape=(4, 2, 128))
+                w = mx.random.normal(shape=(4, 128, 256))
+                w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+                w_hat = self.ternary_round_clip_reference(w, 64)
+                y_q = mx.quantized_matmul(
+                    x, w_q, scales, group_size=64, bits=2, mode="ternary",
+                    transpose=False,
+                )
+                y_ref = x @ w_hat
+                self.assert_ternary_gpu_allclose(y_q, y_ref)
+
     def test_qqmv(self):
         key = mx.random.key(0)
         k1, k2 = mx.random.split(key)

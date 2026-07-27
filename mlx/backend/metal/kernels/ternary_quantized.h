@@ -240,3 +240,148 @@ template <typename T, int group_size, int bits>
   ternary_qmv_fast_impl<T, group_size, bits>(
       w, scales, x, y, in_vec_size, out_vec_size, tid, simd_gid, simd_lid);
 }
+
+// values_per_thread ternary codes (packed 4 per byte, LSB-first) decoded
+// and accumulated as an OUTER product: one x scalar times each of
+// values_per_thread weight codes, into that many result accumulators.
+// Mirrors quantized.h's own qouter, minus the bias term ternary doesn't
+// have.
+template <typename U, int values_per_thread>
+inline void ternary_qouter(
+    const thread uint8_t* w,
+    U x,
+    U scale,
+    thread U* result) {
+  constexpr int bytes = values_per_thread / 4;
+#pragma clang loop unroll(full)
+  for (int b = 0; b < bytes; b++) {
+    uint8_t byte = w[b];
+#pragma clang loop unroll(full)
+    for (int j = 0; j < 4; j++) {
+      uint8_t code = (byte >> (2 * j)) & 0x03;
+      result[b * 4 + j] += x * scale * (U(code) - U(1));
+    }
+  }
+}
+
+// Mirrors qvm_impl (mlx/backend/metal/kernels/quantized.h) -- x @ w with w
+// stored (K, N) (transpose == false), one x scalar per lane per block,
+// values_per_thread output columns decoded and accumulated per lane, then
+// simd_sum'd across the group. Non-batched only, like ternary_qmv_fast_impl
+// above: mlx::quantized_matmul only calls this for w.ndim() == 2. in_vec_stride
+// is separate from in_vec_size only for the split-K variant below (identical
+// to it otherwise), matching qvm_impl's own parameterization.
+template <typename T, int group_size, int bits>
+METAL_FUNC void ternary_qvm_impl(
+    const device uint32_t* w,
+    const device T* scales,
+    const device T* x,
+    device T* y,
+    const int in_vec_size,
+    const int out_vec_size,
+    const int in_vec_stride,
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  static_assert(bits == 2, "ternary quantization requires bits == 2");
+  constexpr int num_simdgroups = 2;
+  constexpr int pack_factor = 32 / bits; // codes per uint32 word
+  constexpr int tn = 32 / pack_factor; // uint32 words per thread
+  constexpr int block_size = SIMD_SIZE;
+  constexpr int values_per_thread = tn * pack_factor;
+
+  typedef float U;
+  typedef struct {
+    uint32_t wi[tn];
+  } vec_w;
+
+  thread vec_w w_local;
+  thread U result[values_per_thread] = {0};
+  thread U scale = 1;
+  thread U x_local = 0;
+
+  const int out_vec_size_w = out_vec_size / pack_factor;
+  const int out_vec_size_g = out_vec_size / group_size;
+  int out_col = values_per_thread * (tid.y * num_simdgroups + simd_gid);
+  const device uint32_t* ws = w + out_col / pack_factor + simd_lid * out_vec_size_w;
+  scales += out_col / group_size + simd_lid * out_vec_size_g;
+  x += tid.x * in_vec_stride + simd_lid;
+  y += tid.x * out_vec_size + out_col;
+
+  if (out_col >= out_vec_size) {
+    return;
+  }
+
+  int remaining = in_vec_size % block_size;
+  if (remaining == 0) {
+    for (int i = 0; i < in_vec_size; i += block_size) {
+      x_local = *x;
+      scale = static_cast<U>(*scales);
+      w_local = *((const device vec_w*)ws);
+      ternary_qouter<U, values_per_thread>(
+          (const thread uint8_t*)&w_local, x_local, scale, result);
+
+      x += block_size;
+      scales += block_size * out_vec_size_g;
+      ws += block_size * out_vec_size_w;
+    }
+  } else {
+    for (int i = block_size; i < in_vec_size; i += block_size) {
+      x_local = *x;
+      scale = static_cast<U>(*scales);
+      w_local = *((const device vec_w*)ws);
+      ternary_qouter<U, values_per_thread>(
+          (const thread uint8_t*)&w_local, x_local, scale, result);
+
+      x += block_size;
+      scales += block_size * out_vec_size_g;
+      ws += block_size * out_vec_size_w;
+    }
+    if (static_cast<int>(simd_lid) < remaining) {
+      x_local = *x;
+      scale = static_cast<U>(*scales);
+      w_local = *((const device vec_w*)ws);
+    } else {
+      x_local = 0;
+      scale = 0;
+    }
+    ternary_qouter<U, values_per_thread>(
+        (const thread uint8_t*)&w_local, x_local, scale, result);
+  }
+
+#pragma clang loop unroll(full)
+  for (int k = 0; k < values_per_thread; k++) {
+    result[k] = simd_sum(result[k]);
+  }
+
+  if (simd_lid == 0) {
+#pragma clang loop unroll(full)
+    for (int k = 0; k < values_per_thread; k++) {
+      y[k] = static_cast<T>(result[k]);
+    }
+  }
+}
+
+template <typename T, int group_size, int bits>
+[[kernel]] void ternary_qvm(
+    const device uint32_t* w [[buffer(0)]],
+    const device T* scales [[buffer(1)]],
+    const device T* x [[buffer(2)]],
+    device T* y [[buffer(3)]],
+    const constant int& in_vec_size [[buffer(4)]],
+    const constant int& out_vec_size [[buffer(5)]],
+    uint3 tid [[threadgroup_position_in_grid]],
+    uint simd_gid [[simdgroup_index_in_threadgroup]],
+    uint simd_lid [[thread_index_in_simdgroup]]) {
+  ternary_qvm_impl<T, group_size, bits>(
+      w,
+      scales,
+      x,
+      y,
+      in_vec_size,
+      out_vec_size,
+      in_vec_size,
+      tid,
+      simd_gid,
+      simd_lid);
+}

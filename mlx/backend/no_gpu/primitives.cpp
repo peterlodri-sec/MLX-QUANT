@@ -171,6 +171,8 @@ NO_GPU_MULTI(ScaledDotProductAttention)
 NO_GPU_MULTI(ScaledDotProductAttentionVJP)
 NO_GPU_MULTI(ConvertFP8)
 NO_GPU_MULTI(Quantize)
+NO_GPU_MULTI(TernaryQmvFast)
+NO_GPU_MULTI(TernaryQvm)
 NO_GPU_MULTI(CustomKernel)
 } // namespace fast
 

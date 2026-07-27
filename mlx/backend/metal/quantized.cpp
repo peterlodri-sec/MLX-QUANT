@@ -1900,6 +1900,50 @@ void fast::TernaryQmvFast::eval_gpu(
   compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
 }
 
+void fast::TernaryQvm::eval_gpu(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  auto& s = stream();
+  auto& d = metal::device(s.device);
+  auto& out = outputs[0];
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  // Non-batched weights only (w.ndim() == 2, w stored (K, N)) -- see
+  // ternary_qmv_fast's own eval_gpu above for the same reasoning.
+  array x = ensure_row_contiguous_matrix(inputs[0], d, s);
+  array w = ensure_row_contiguous_matrix(inputs[1], d, s);
+  array scales = ensure_row_contiguous_matrix(inputs[2], d, s);
+
+  int K = x.shape(-1);
+  int N = out.shape(-1);
+
+  constexpr int num_simdgroups = 2;
+  constexpr int bk = 32;
+  int bn = std::min(group_size_, 32) * num_simdgroups;
+  MTL::Size group_dims(bk, num_simdgroups, 1);
+  MTL::Size grid_dims(x.size() / K, (N + bn - 1) / bn, 1);
+
+  std::string kname;
+  kname.reserve(64);
+  std::string type_string = get_type_string(x.dtype());
+  concatenate(kname, "ternary_qvm_", type_string, "_gs_", group_size_, "_b_2");
+  auto kernel = get_quantized_kernel_wrapped(
+      d, kname, "qvm", "ternary", type_string, group_size_, 2);
+
+  auto& compute_encoder = metal::get_command_encoder(s);
+  compute_encoder.set_compute_pipeline_state(kernel);
+
+  int c = 0;
+  compute_encoder.set_input_array(w, c++);
+  compute_encoder.set_input_array(scales, c++);
+  compute_encoder.set_input_array(x, c++);
+  compute_encoder.set_output_array(out, c++);
+  compute_encoder.set_bytes(K, c++);
+  compute_encoder.set_bytes(N, c++);
+
+  compute_encoder.dispatch_threadgroups(grid_dims, group_dims);
+}
+
 void fast::ConvertFP8::eval_gpu(
     const std::vector<array>& inputs,
     std::vector<array>& outputs) {
