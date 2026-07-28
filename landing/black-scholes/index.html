@@ -1,0 +1,27 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Black-Scholes — axiomquant.org</title>
+<!-- agy: build the visual layer here — WebGPU background, canvas charts, interactive controls -->
+</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
+<h1>Black-Scholes &amp; Stochastic Calculus</h1>
+
+<h2>Scaffold — what this page needs</h2>
+<ul>
+<li>Interactive Black-Scholes pricing: spot, strike, vol, rate, time → call/put prices</li>
+<li>Greeks visualization (delta, gamma, theta, vega, rho) as surface plots or sensitivity charts</li>
+<li>GBM path simulation — Monte Carlo price paths with MLX acceleration (use <code>python/mlx/quant/stochastic.py</code>)</li>
+<li>Volatility smile/skew explainer — why markets don't follow Black-Scholes flat vol</li>
+<li>Connection to threshold phenomena: at what vol level does the option become ITM with probability > 0.5?</li>
+</ul>
+
+<h2>Data contracts</h2>
+<pre>
+S (spot): float
+K (strike): float  
+T (time to expiry): float (years)
+r (risk-free rate): float
+σ (volatility): float
+→ call_price, put_price, delta, gamma, theta, vega, rho
+</pre>
+
+<!-- agy: foundation code already in python/mlx/quant/stochastic.py (simulate_gbm) -->
+<!-- agy: build the canvas + controls + WebGPU background -->
+</body></html>

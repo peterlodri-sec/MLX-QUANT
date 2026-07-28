@@ -1,238 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Markowitz Frontier — axiomquant.org</title>
-<style>
-:root{--bg:#070b16;--fg:#c8d6e5;--accent:#6c5ce7;--gold:#ffd700;--green:#00cec9;--muted:#636e72}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:'JetBrains Mono',monospace;line-height:1.7;padding:24px}
-header{max-width:900px;margin:0 auto 32px}
-header h1{font-size:16px;font-weight:400;letter-spacing:.3em;color:var(--accent)}
-header h1 span{color:var(--gold)}
-header a{color:#636e72;font-size:10px;text-decoration:none;letter-spacing:.1em}
-main{max-width:900px;margin:0 auto}
-.explanation{font-size:12px;color:#636e72;line-height:1.8;margin-bottom:32px}
-.explanation h2{color:var(--fg);font-size:14px;margin-bottom:8px}
-.explanation p{margin-bottom:12px}
-.explanation em{color:var(--accent);font-style:normal}
-.formula{background:rgba(108,92,231,.06);border-left:2px solid var(--accent);padding:8px 14px;margin:8px 0;font-size:11px;color:var(--fg)}
-.formula var{color:var(--gold);font-style:normal}
-.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:end}
-.controls label{font-size:10px;color:#636e72;letter-spacing:.1em;text-transform:uppercase}
-.controls input,.controls select{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:var(--fg);font-family:inherit;padding:6px 10px;border-radius:4px;font-size:12px;width:120px}
-.controls button{background:var(--accent);border:none;color:#fff;font-family:inherit;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600}
-.controls button:hover{background:#7c6df7}
-canvas{display:block;background:rgba(255,255,255,.01);border:1px solid rgba(255,255,255,.06);border-radius:6px;max-width:100%}
-.results{margin-top:16px;font-size:11px}
-.results table{width:100%;border-collapse:collapse}
-.results th,.results td{padding:6px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.04)}
-.results th{color:var(--accent);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:400}
-.results td{color:var(--fg)}
-.results td.muted{color:#636e72}
-footer{text-align:center;font-size:10px;color:#636e72;margin-top:48px;padding-top:16px;border-top:1px solid rgba(108,92,231,.1)}
-footer a{color:var(--accent);text-decoration:none}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markowitz Mean-Variance Optimizer — AXIOM QUANT</title>
+    <meta name="description" content="From-scratch Markowitz mean-variance optimizer with efficient frontier canvas, max Sharpe tangency line, 5 asset universes, and threshold surface QP derivation.">
+    
+    <!-- Open Graph & Social Cards -->
+    <meta property="og:title" content="Markowitz Optimizer — AXIOM QUANT">
+    <meta property="og:description" content="Interactive Markowitz Mean-Variance Efficient Frontier and QP threshold surface derivation.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://axiomquant.org/markowitz">
+
+    <!-- MathJax for rendering equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>Markowitz <span>Frontier</span></h1>
-  <a href="https://axiomquant.org">← axiomquant.org</a>
-</header>
+    <!-- Background Canvas Grid -->
+    <canvas id="backgroundGridCanvas"></canvas>
 
-<main>
-<div class="explanation">
-  <h2>Mean-Variance Optimization</h2>
-  <p>Harry Markowitz, 1952. The problem: given <em>n</em> assets with expected returns <var>&mu;</var> and covariance matrix <var>&Sigma;</var>, find the portfolio weights <var>w</var> that minimize risk for a given target return.</p>
+    <div class="page-shell">
+        
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="brand-group">
+                <a href="/" class="brand-link">
+                    <span class="crest">△</span>
+                    <span class="brand-name">AXIOM—QUANT</span>
+                </a>
+                <span class="route-tag">/MARKOWITZ</span>
+            </div>
 
-  <div class="formula">
-    minimize<sub>w</sub> &nbsp; <var>w</var><sup>T</sup><var>&Sigma;</var><var>w</var> &nbsp;&mdash;&nbsp; <em>portfolio variance</em><br>
-    subject to &nbsp; <var>w</var><sup>T</sup><var>&mu;</var> = <var>r</var><sub>target</sub> &nbsp;&mdash;&nbsp; <em>target return</em><br>
-    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <var>&Sigma;</var><var>w<sub>i</sub></var> = 1 &nbsp;&mdash;&nbsp; <em>fully invested</em><br>
-    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <var>w<sub>i</sub></var> &ge; 0 &nbsp;&mdash;&nbsp; <em>no short selling</em>
-  </div>
+            <nav class="top-nav">
+                <a href="/" class="nav-link">← RETURN TO MANIFESTO</a>
+                <span class="status-badge">QP ENGINE v1.0</span>
+            </nav>
+        </header>
 
-  <p>The <em>efficient frontier</em> is the set of all portfolios that maximize return for a given risk. No portfolio below the frontier is optimal — you can get more return for the same risk. The <em>tangency portfolio</em> (maximum Sharpe ratio) is the point where the capital market line touches the frontier.</p>
+        <!-- Main Content Grid -->
+        <main class="markowitz-layout">
+            
+            <!-- Left Column: Controls & Presets -->
+            <aside class="controls-panel">
+                <div class="panel-card">
+                    <h3 class="card-label">01 // SELECT ASSET UNIVERSE</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn active" data-universe="bigtech">Big Tech (AAPL/MSFT/GOOGL/AMZN/TSLA)</button>
+                        <button class="preset-btn" data-universe="finance">Finance (JPM/BAC/GS/MS/C)</button>
+                        <button class="preset-btn" data-universe="energy">Energy (XOM/CVX/COP/SLB/EOG)</button>
+                        <button class="preset-btn" data-universe="crypto">Crypto (BTC/ETH/SOL/BNB/AVAX)</button>
+                        <button class="preset-btn" data-universe="etfs">ETFs (SPY/QQQ/IWM/TLT/GLD)</button>
+                    </div>
+                </div>
 
-  <p>This is a <em>threshold problem</em>: as target return increases, the optimal portfolio crosses thresholds where new assets enter the allocation. The same mathematics as Erdős–Rényi phase transitions — edges (assets) enter the portfolio at critical values of the Lagrange multiplier.</p>
-</div>
+                <div class="panel-card">
+                    <h3 class="card-label">02 // CUSTOM ASSET DATA / PARAMETERS</h3>
+                    <div class="field-row">
+                        <label for="rfRate">RISK-FREE RATE ($r_f$):</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="rfRate" value="4.5" step="0.1" min="0" max="20" />
+                            <span>%</span>
+                        </div>
+                    </div>
 
-<div class="controls">
-  <div><label>Tickers</label><br><input id="tickers" value="AAPL,MSFT,GOOGL,AMZN,TSLA" style="width:240px"></div>
-  <div><label>Samples</label><br><select id="preset"><option value="">custom</option><option value="AAPL,MSFT,GOOGL,AMZN,TSLA">Big Tech</option><option value="JPM,GS,BAC,MS,C">Finance</option><option value="XOM,CVX,COP,SLB,BP">Energy</option><option value="BTC-USD,ETH-USD,SOL-USD">Crypto</option><option value="SPY,QQQ,TLT,GLD,USO">ETFs</option></select></div>
-  <div><button onclick="compute()">Compute Frontier</button></div>
-</div>
+                    <div class="field-row">
+                        <label for="simPortfolios">MONTE CARLO SAMPLES:</label>
+                        <select id="simPortfolios">
+                            <option value="1000">1,000 Portfolios</option>
+                            <option value="3000" selected>3,000 Portfolios</option>
+                            <option value="5000">5,000 Portfolios</option>
+                        </select>
+                    </div>
 
-<canvas id="chart" width="800" height="500"></canvas>
+                    <div class="custom-ticker-box">
+                        <label for="customTickers">CUSTOM TICKER LIST (COMMA SEPARATED):</label>
+                        <input type="text" id="customTickers" placeholder="e.g. NVDA, META, AMD, PLTR" />
+                        <button class="btn-primary" onclick="applyCustomTickers()">APPLY CUSTOM UNIVERSE</button>
+                    </div>
+                </div>
 
-<div class="results" id="results"></div>
-</main>
+                <!-- Asset Summary Table -->
+                <div class="panel-card">
+                    <h3 class="card-label">03 // UNIVERSE EXPECTED RETURNS & VOLATILITY</h3>
+                    <div class="table-wrapper">
+                        <table id="assetSummaryTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>TICKER</th>
+                                    <th>E(R) %</th>
+                                    <th>VOL ($\sigma$) %</th>
+                                    <th>SHARPE</th>
+                                </tr>
+                            </thead>
+                            <tbody><!-- Populated dynamically --></tbody>
+                        </table>
+                    </div>
+                </div>
+            </aside>
 
-<footer>axiomquant.org · Markowitz (1952) · threshold problems in two domains</footer>
+            <!-- Right Column: Interactive Frontier Canvas & Results -->
+            <section class="visualizer-panel">
+                
+                <!-- Main Canvas Visualizer -->
+                <div class="canvas-card">
+                    <div class="canvas-header">
+                        <div class="title-group">
+                            <h2>EFFICIENT FRONTIER & CAPITAL ALLOCATION LINE</h2>
+                            <span class="sub-legend">Individual Assets (●) | Min Variance (▲) | Max Sharpe Tangency (★)</span>
+                        </div>
+                        <div class="canvas-telemetry">
+                            <span id="maxSharpeVal" class="gold-text">MAX SHARPE: --</span>
+                        </div>
+                    </div>
 
-<script>
-const SAMPLES = {
-  'AAPL,MSFT,GOOGL,AMZN,TSLA': {mu:[0.22,0.18,0.15,0.12,0.28],cov:[[0.08,0.03,0.03,0.02,0.04],[0.03,0.06,0.03,0.02,0.03],[0.03,0.03,0.07,0.02,0.03],[0.02,0.02,0.02,0.05,0.02],[0.04,0.03,0.03,0.02,0.14]]},
-  'JPM,GS,BAC,MS,C': {mu:[0.10,0.08,0.06,0.09,0.05],cov:[[0.05,0.03,0.02,0.03,0.02],[0.03,0.06,0.02,0.04,0.02],[0.02,0.02,0.04,0.02,0.02],[0.03,0.04,0.02,0.07,0.02],[0.02,0.02,0.02,0.02,0.05]]},
-  'XOM,CVX,COP,SLB,BP': {mu:[0.08,0.06,0.12,0.04,0.05],cov:[[0.04,0.03,0.03,0.02,0.02],[0.03,0.05,0.03,0.02,0.02],[0.03,0.03,0.09,0.03,0.02],[0.02,0.02,0.03,0.06,0.02],[0.02,0.02,0.02,0.02,0.05]]},
-  'BTC-USD,ETH-USD,SOL-USD': {mu:[0.60,0.45,0.80],cov:[[0.40,0.25,0.30],[0.25,0.35,0.28],[0.30,0.28,0.60]]},
-  'SPY,QQQ,TLT,GLD,USO': {mu:[0.09,0.14,0.03,0.05,0.04],cov:[[0.04,0.03,0.00,0.01,0.01],[0.03,0.06,0.00,0.01,0.01],[0.00,0.00,0.03,0.01,0.00],[0.01,0.01,0.01,0.04,0.01],[0.01,0.01,0.00,0.01,0.08]]}
-};
+                    <div class="frontier-canvas-wrapper">
+                        <canvas id="frontierCanvas"></canvas>
+                        <div id="chartTooltip" class="chart-tooltip"></div>
+                    </div>
+                </div>
 
-function identity(n){ var I=[]; for(var i=0;i<n;i++){ I[i]=[]; for(var j=0;j<n;j++) I[i][j]=i===j?1:0; } return I; }
-function matmul(A,B){ var n=A.length,m=B[0].length,p=B.length,R=[]; for(var i=0;i<n;i++){ R[i]=[]; for(var j=0;j<m;j++){ var s=0; for(var k=0;k<p;k++) s+=A[i][k]*B[k][j]; R[i][j]=s; } } return R; }
-function transpose(A){ var R=[]; for(var j=0;j<A[0].length;j++){ R[j]=[]; for(var i=0;i<A.length;i++) R[j][i]=A[i][j]; } return R; }
-function matvec(A,v){ var R=[]; for(var i=0;i<A.length;i++){ var s=0; for(var j=0;j<v.length;j++) s+=A[i][j]*v[j]; R[i]=s; } return R; }
-function dot(u,v){ var s=0; for(var i=0;i<u.length;i++) s+=u[i]*v[i]; return s; }
-function add(u,v){ var R=[]; for(var i=0;i<u.length;i++) R[i]=u[i]+v[i]; return R; }
-function scale(v,s){ return v.map(function(x){return x*s;}); }
-function sum(v){ return v.reduce(function(a,b){return a+b;},0); }
-function norm(v){ return Math.sqrt(dot(v,v)); }
+                <!-- Optimal Weights Table comparison -->
+                <div class="weights-card">
+                    <h3 class="card-label">04 // OPTIMAL PORTFOLIO WEIGHT ALLOCATIONS ($w_i$)</h3>
+                    <div class="table-wrapper">
+                        <table id="weightsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ASSET</th>
+                                    <th>MINIMUM VARIANCE WEIGHT</th>
+                                    <th>TANGENCY (MAX SHARPE) WEIGHT</th>
+                                    <th>ALLOCATION BARS</th>
+                                </tr>
+                            </thead>
+                            <tbody><!-- Populated dynamically --></tbody>
+                        </table>
+                    </div>
+                </div>
 
-function solveQP(S,mu,r,n){
-  // min w'Sw s.t. mu'w = r, 1'w = 1, w >= 0
-  // via critical line algorithm simplified: grid search over target returns
-  var steps=200, best=[], bestVar=Infinity, bestW=null;
-  for(var s=0;s<=steps;s++){
-    var rr = s/steps*(Math.max.apply(null,mu)-Math.min.apply(null,mu))+Math.min.apply(null,mu);
-    // Equal-weight starting point projected
-    var w=[], total=0;
-    for(var i=0;i<n;i++) w[i]=Math.max(0,Math.random());
-    total=sum(w); for(var i=0;i<n;i++) w[i]/=total;
-    // Simple gradient projection (projected gradient descent on QP)
-    for(var iter=0;iter<200;iter++){
-      var grad=matvec(S,w);
-      for(var i=0;i<n;i++) w[i]-=0.01*grad[i];
-      // Project: non-negative
-      for(var i=0;i<n;i++) w[i]=Math.max(0,w[i]);
-      // Project: sum to 1
-      total=sum(w); if(total>1e-10) for(var i=0;i<n;i++) w[i]/=total;
-      // Project: return constraint (soft)
-      var curR=dot(w,mu);
-      if(Math.abs(curR-rr)>0.001){
-        var lambda=0.1*(rr-curR);
-        for(var i=0;i<n;i++) w[i]+=lambda*mu[i];
-        for(var i=0;i<n;i++) w[i]=Math.max(0,w[i]);
-        total=sum(w); if(total>1e-10) for(var i=0;i<n;i++) w[i]/=total;
-      }
-    }
-    var portVar = dot(w,matvec(S,w));
-    var portRet = dot(w,mu);
-    if(portVar<bestVar){ bestVar=portVar; bestW=w.slice(); best=[portRet,Math.sqrt(portVar)]; }
-    if(s%20===0 && bestW){
-      var r1=dot(bestW,mu), r2=Math.sqrt(dot(bestW,matvec(S,bestW)));
-      if(bestW) best=[r1,r2];
-    }
-  }
-  return bestW||new Array(n).fill(1/n);
-}
+                <!-- Mathematical QP & Axiom Thesis Derivation Section -->
+                <div class="math-derivation-card">
+                    <h3 class="card-label gold-text">05 // QUADRATIC PROGRAMMING & THE AXIOM THESIS</h3>
+                    
+                    <div class="math-content">
+                        <div class="math-column">
+                            <h4>Quadratic Optimization Formulation</h4>
+                            <p>The classical Markowitz mean-variance optimization problem is structured as a constrained Quadratic Program (QP):</p>
+                            
+                            <div class="equation-box">
+                                $$\min_{w} \quad \frac{1}{2} w^T \Sigma w \quad \text{subject to} \quad w^T \mathbf{1} = 1, \quad w^T \mu = r_p, \quad w \ge 0$$
+                            </div>
 
-function computeEfficientFrontier(mu,cov){
-  var n=mu.length, steps=100;
-  var minR=Math.min.apply(null,mu), maxR=Math.max.apply(null,mu);
-  var frontier=[], weights=[];
+                            <p>Constructing the Lagrangian $\mathcal{L}(w, \lambda, \gamma, \eta)$ with multipliers for portfolio budget, target return, and no-shorting constraints:</p>
+                            
+                            <div class="equation-box">
+                                $$\mathcal{L}(w, \lambda, \gamma, \eta) = \frac{1}{2} w^T \Sigma w - \lambda (w^T \mathbf{1} - 1) - \gamma (w^T \mu - r_p) - \eta^T w$$
+                            </div>
+                        </div>
 
-  for(var i=0;i<=steps;i++){
-    var target=minR+(maxR-minR)*i/steps;
-    var w=solveQP(cov,mu,target,n);
-    var ret=dot(w,mu), risk=Math.sqrt(dot(w,matvec(cov,w)));
-    frontier.push([risk,ret]);
-    weights.push(w);
-  }
+                        <div class="math-column">
+                            <h4>The Axiom Thesis: Threshold Surface Realizability</h4>
+                            <p class="thesis-quote">
+                                <em>"The Efficient Frontier is not merely a curve of optimal risk-return pairs; it is a <strong>threshold surface</strong> in high-dimensional state space—governed by the exact same mathematics as the <strong>graph realizability boundary</strong>."</em>
+                            </p>
+                            
+                            <p>As target return $r_p$ varies, the KKT slackness condition $\eta_i w_i = 0$ acts as a phase transition threshold. At critical Lagrange multipliers $(\lambda^*, \gamma^*)$, inactive assets cross from $w_i = 0$ (boundary) to $w_i > 0$ (interior), creating piecewise analytic phase shifts across the risk-return manifold.</p>
+                        </div>
+                    </div>
+                </div>
 
-  // Minimum variance portfolio
-  var minVarIdx=0, minVar=Infinity;
-  for(var i=0;i<frontier.length;i++){ if(frontier[i][0]<minVar){ minVar=frontier[i][0]; minVarIdx=i; } }
+            </section>
 
-  // Tangency (max Sharpe, rf=0.02)
-  var rf=0.02, maxSharpe=0, tangIdx=0;
-  for(var i=0;i<frontier.length;i++){ var s=(frontier[i][1]-rf)/frontier[i][0]; if(s>maxSharpe){ maxSharpe=s; tangIdx=i; } }
+        </main>
 
-  return {frontier:frontier, weights:weights, minVar:minVarIdx, tangency:tangIdx, rf:rf, mu:mu, cov:cov};
-}
+        <!-- Footer -->
+        <footer class="page-footer">
+            <span class="mono-label">AXIOM QUANT RESEARCH // MARKOWITZ MEAN-VARIANCE THESIS</span>
+            <span class="mono-label muted">PUBLISHED FOR AXIOMQUANT.ORG</span>
+        </footer>
 
-function draw(frontier,mu,cov,names){
-  var c=document.getElementById('chart'),w=c.width,h=c.height;
-  var ctx=c.getContext('2d');
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#070b16';ctx.fillRect(0,0,w,h);
+    </div>
 
-  var pad=50, pw=w-2*pad, ph=h-2*pad;
-  var allRisks=frontier.map(function(p){return p[0];});
-  var allRets=frontier.map(function(p){return p[1];});
-  for(var i=0;i<mu.length;i++){ allRisks.push(Math.sqrt(cov[i][i])); allRets.push(mu[i]); }
-  var xMin=0, xMax=Math.max.apply(null,allRisks)*1.15;
-  var yMin=Math.min(0,Math.min.apply(null,allRets))-0.02;
-  var yMax=Math.max.apply(null,allRets)+0.04;
-  function X(x){return pad+(x-xMin)/(xMax-xMin)*pw;}
-  function Y(y){return h-pad-(y-yMin)/(yMax-yMin)*ph;}
-
-  // grid
-  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
-  for(var i=0;i<=10;i++){ var y=yMin+(yMax-yMin)*i/10; ctx.beginPath();ctx.moveTo(pad,Y(y));ctx.lineTo(w-pad,Y(y));ctx.stroke(); }
-  for(var i=0;i<=10;i++){ var x=xMin+(xMax-xMin)*i/10; ctx.beginPath();ctx.moveTo(X(x),pad);ctx.lineTo(X(x),h-pad);ctx.stroke(); }
-
-  // axis labels
-  ctx.fillStyle='#636e72';ctx.font='9px JetBrains Mono';
-  for(var i=0;i<=10;i++){ var y=yMin+(yMax-yMin)*i/10; ctx.fillText((y*100).toFixed(0)+'%',pad-40,Y(y)+3); }
-  for(var i=0;i<=10;i++){ var x=xMin+(xMax-xMin)*i/10; ctx.fillText((x*100).toFixed(0)+'%',X(x)-12,h-pad+14); }
-  ctx.fillText('Risk (σ)',w/2-20,h-10);
-  ctx.save();ctx.translate(10,h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Return (μ)',-40,0);ctx.restore();
-
-  // individual assets
-  for(var i=0;i<mu.length;i++){
-    ctx.fillStyle='#6c5ce7';ctx.beginPath();
-    var ax=X(Math.sqrt(cov[i][i])),ay=Y(mu[i]);
-    ctx.arc(ax,ay,5,0,2*Math.PI);ctx.fill();
-    ctx.fillStyle='#c8d6e5';ctx.font='9px JetBrains Mono';ctx.fillText(names[i],ax+8,ay+3);
-  }
-
-  // efficient frontier
-  ctx.strokeStyle='#6c5ce7';ctx.lineWidth=2.5;ctx.beginPath();
-  for(var i=0;i<frontier.length;i++){ var p=frontier[i]; i===0?ctx.moveTo(X(p[0]),Y(p[1])):ctx.lineTo(X(p[0]),Y(p[1])); } ctx.stroke();
-
-  // Tangency line
-  var r=frontier[0],tangPt=frontier[tangIdx];
-  var tx=X(tangPt[0]),ty=Y(tangPt[1]), ry=Y(frontier[0][0]);
-  ctx.strokeStyle='#ffd700';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();
-  ctx.moveTo(X(0),Y(frontier[0][0]));ctx.lineTo(tx,ty);ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Tangency point
-  ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(tx,ty,7,0,2*Math.PI);ctx.fill();
-  ctx.fillStyle='#c8d6e5';ctx.font='10px JetBrains Mono';ctx.fillText('Tangency (max Sharpe)',tx+10,ty-8);
-}
-
-function showResults(result,names){
-  var t=result.tangency, m=result.minVar;
-  var wTan=result.weights[t], wMin=result.weights[m];
-  var fTan=result.frontier[t], fMin=result.frontier[m];
-  var h='<table><tr><th>Portfolio</th><th>Return</th><th>Risk (σ)</th><th>Sharpe</th><th>Weights</th></tr>';
-  h+='<tr><td>Minimum Variance</td><td>'+(fMin[1]*100).toFixed(1)+'%</td><td>'+(fMin[0]*100).toFixed(1)+'%</td><td class="muted">'+(fMin[1]/fMin[0]).toFixed(2)+'</td><td class="muted">'+wMin.map(function(x,i){return names[i]+' '+(x*100).toFixed(0)+'%';}).join(', ')+'</td></tr>';
-  h+='<tr><td>Tangency (max Sharpe)</td><td>'+(fTan[1]*100).toFixed(1)+'%</td><td>'+(fTan[0]*100).toFixed(1)+'%</td><td>'+(fTan[1]/fTan[0]).toFixed(2)+'</td><td>'+wTan.map(function(x,i){return names[i]+' '+(x*100).toFixed(0)+'%';}).join(', ')+'</td></tr>';
-  h+='</table>';
-  document.getElementById('results').innerHTML=h;
-}
-
-function compute(){
-  var tickers=document.getElementById('tickers').value.trim();
-  var names=tickers.split(',').map(function(s){return s.trim();});
-  var sample=SAMPLES[tickers];
-  if(!sample){ document.getElementById('results').innerHTML='<p style="color:#636e72">No sample data for these tickers. Choose a preset or use sample data.</p>'; return; }
-
-  var mu=sample.mu, cov=sample.cov;
-  var result=computeEfficientFrontier(mu,cov);
-  draw(result.frontier,mu,cov,names);
-  showResults(result,names);
-}
-
-document.getElementById('preset').addEventListener('change',function(){
-  if(this.value) document.getElementById('tickers').value=this.value;
-  compute();
-});
-
-compute();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>

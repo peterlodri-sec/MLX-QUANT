@@ -1,0 +1,30 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Dyadic Analysis — axiomquant.org</title>
+<!-- agy: visual layer — dyadic tree, context graph, interactive transform explorer -->
+</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
+<h1>Dyadic Transformation &amp; Context Realizability</h1>
+
+<h2>Scaffold — what this page needs</h2>
+<ul>
+<li>Interactive dyadic transformation explorer: x → 2x mod 1, visual orbit diagram</li>
+<li>Context graph visualizer — nodes as measurement contexts, edges as transitions</li>
+<li>Spanning tree vs. cycle detection — highlight β₁ and its effect on realizability</li>
+<li>K₃ minimal witness: the triangle that forces complex amplitudes (interactive SVG)</li>
+<li>Connection to Erdős threshold: at what edge density does the graph become unrealizable?</li>
+</ul>
+
+<h2>Data contracts</h2>
+<pre>
+graph: { vertices: n, edges: m, components: c }
+→ β₁ = m - n + c (cycle rank / first Betti number)
+→ realizability: "ℜ" if β₁ = 0, "ℂ" if β₁ ≥ 1
+</pre>
+
+<h2>References</h2>
+<ul>
+<li>Dyadic transformation: https://en.wikipedia.org/wiki/Dyadic_transformation</li>
+<li>Dyad analysis in plant ecology: https://rsat.eead.csic.es/plants/help.dyad-analysis.html</li>
+<li>GitHub: https://github.com/peterlodri-sec/dyad-mapping</li>
+</ul>
+
+<!-- agy: build the interactive graph canvas + WebGPU background -->
+</body></html>

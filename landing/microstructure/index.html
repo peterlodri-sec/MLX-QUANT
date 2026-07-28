@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Microstructure — axiomquant.org</title>
+<!-- agy: visual layer — L2 orderbook heatmap, spread animations, depth charts -->
+</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
+<h1>Market Microstructure</h1>
+
+<h2>Scaffold — what this page needs</h2>
+<ul>
+<li>Interactive L2 orderbook visualizer — bid/ask depth ladder with real-time feel</li>
+<li>Spread analysis: bid-ask spread dynamics, effective vs quoted spread</li>
+<li>Market impact model — how large orders move the book</li>
+<li>Order flow toxicity: VPIN (Volume-Synchronized Probability of Informed Trading)</li>
+<li>Connection to threshold phenomena: at what order size does information leakage become detectable?</li>
+</ul>
+
+<h2>Data contracts</h2>
+<pre>
+orderbook: { bids: [{price, size}], asks: [{price, size}] }
+→ spread, mid_price, depth_imbalance, VPIN_estimate
+</pre>
+
+<!-- agy: foundation code already in python/mlx/quant/microstructure.py (simulate_l2_orderbook) -->
+<!-- agy: build canvas heatmap + depth chart + WebGPU background -->
+</body></html>

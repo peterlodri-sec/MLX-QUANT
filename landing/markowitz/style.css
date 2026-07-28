@@ -1,0 +1,456 @@
+/* ==========================================================================
+   AXIOM QUANT — MARKOWITZ OPTIMIZER STYLES (SPECTRAL EQUILIBRIUM)
+   ========================================================================== */
+
+:root {
+    --bg-color: #06070B;
+    --cyan-accent: #00F0FF;
+    --gold-accent: #E5B958;
+    --white-text: #FFFFFF;
+    --slate-text: #94A3B8;
+    --muted-text: #475569;
+    --grid-line: rgba(30, 41, 59, 0.4);
+    --card-bg: rgba(11, 15, 25, 0.8);
+    --glass-border: rgba(0, 240, 255, 0.15);
+    --font-mono: 'Fira Code', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--bg-color);
+    color: var(--white-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Background Canvas */
+#backgroundGridCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Page Shell */
+.page-shell {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 20px 32px;
+}
+
+.mono-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; color: var(--slate-text); }
+.gold-text { color: var(--gold-accent); }
+.cyan-text { color: var(--cyan-accent); }
+.muted { color: var(--muted-text); }
+
+/* Header Bar */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--grid-line);
+    margin-bottom: 24px;
+}
+
+.brand-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--white-text);
+}
+
+.crest { color: var(--gold-accent); font-size: 18px; }
+
+.brand-name {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+}
+
+.route-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cyan-accent);
+    padding: 2px 8px;
+    background: rgba(0, 240, 255, 0.1);
+    border-radius: 3px;
+}
+
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-link {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--slate-text);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover { color: var(--cyan-accent); }
+
+.status-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--gold-accent);
+    padding: 3px 8px;
+    border: 1px solid var(--gold-accent);
+    border-radius: 3px;
+}
+
+/* Layout Grid */
+.markowitz-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    flex-grow: 1;
+}
+
+/* Panels & Cards */
+.controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-card {
+    background: var(--card-bg);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+}
+
+.card-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--slate-text);
+    margin-bottom: 14px;
+}
+
+/* Preset Buttons */
+.preset-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preset-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--grid-line);
+    color: var(--slate-text);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-align: left;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.preset-btn:hover {
+    border-color: rgba(0, 240, 255, 0.4);
+    color: var(--cyan-accent);
+}
+
+.preset-btn.active {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: var(--cyan-accent);
+    color: var(--white-text);
+    font-weight: 600;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+}
+
+/* Controls Forms */
+.field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.field-row label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted-text);
+}
+
+.input-with-unit {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #020305;
+    border: 1px solid var(--grid-line);
+    border-radius: 3px;
+    padding: 4px 8px;
+}
+
+.input-with-unit input {
+    width: 45px;
+    background: transparent;
+    border: none;
+    color: var(--white-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+}
+
+.input-with-unit span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted-text);
+}
+
+.field-row select {
+    background: #020305;
+    border: 1px solid var(--grid-line);
+    color: var(--white-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    outline: none;
+}
+
+.custom-ticker-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--grid-line);
+}
+
+.custom-ticker-box label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--muted-text);
+}
+
+.custom-ticker-box input {
+    background: #020305;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    padding: 8px;
+    color: var(--white-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    outline: none;
+}
+
+.btn-primary {
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid var(--cyan-accent);
+    color: var(--cyan-accent);
+    padding: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: var(--cyan-accent);
+    color: var(--bg-color);
+}
+
+/* Data Tables */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.data-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--muted-text);
+    font-size: 9px;
+    border-bottom: 1px solid var(--grid-line);
+}
+
+.data-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.2);
+}
+
+/* Visualizer Panel */
+.visualizer-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.canvas-card {
+    background: var(--card-bg);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+}
+
+.canvas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.canvas-header h2 {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    color: var(--white-text);
+}
+
+.sub-legend {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--slate-text);
+    margin-top: 4px;
+    display: block;
+}
+
+.frontier-canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 440px;
+    background: #020305;
+    border: 1px solid rgba(30, 41, 59, 0.6);
+    border-radius: 4px;
+}
+
+#frontierCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+.chart-tooltip {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    background: rgba(6, 7, 11, 0.95);
+    border: 1px solid var(--cyan-accent);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--white-text);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    z-index: 10;
+}
+
+/* Weights Table & Allocation Bars */
+.weights-card {
+    background: var(--card-bg);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 24px;
+}
+
+.weight-bar-container {
+    display: flex;
+    height: 12px;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 2px;
+    overflow: hidden;
+    gap: 1px;
+}
+
+.weight-segment {
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+/* Derivation Card */
+.math-derivation-card {
+    background: var(--card-bg);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 24px;
+}
+
+.math-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--slate-text);
+}
+
+.math-column h4 {
+    color: var(--white-text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.equation-box {
+    background: #020305;
+    border: 1px solid var(--grid-line);
+    padding: 12px;
+    border-radius: 4px;
+    margin: 12px 0;
+    color: var(--gold-accent);
+    text-align: center;
+    overflow-x: auto;
+}
+
+.thesis-quote {
+    background: rgba(229, 185, 88, 0.05);
+    border-left: 3px solid var(--gold-accent);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    color: var(--white-text);
+}
+
+/* Footer */
+.page-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--grid-line);
+    margin-top: 32px;
+}
+
+@media (max-width: 1024px) {
+    .markowitz-layout { grid-template-columns: 1fr; }
+    .math-content { grid-template-columns: 1fr; }
+}
