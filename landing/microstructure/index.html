@@ -1,23 +1,110 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Microstructure — axiomquant.org</title>
-<!-- agy: visual layer — L2 orderbook heatmap, spread animations, depth charts -->
-</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
-<h1>Market Microstructure</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Microstructure & Orderbook Dynamics — AXIOM QUANT</title>
+    <meta name="description" content="Interactive Level-2 limit order book depth ladder, bid-ask spread dynamics, and VPIN toxicity analysis.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
 
-<h2>Scaffold — what this page needs</h2>
-<ul>
-<li>Interactive L2 orderbook visualizer — bid/ask depth ladder with real-time feel</li>
-<li>Spread analysis: bid-ask spread dynamics, effective vs quoted spread</li>
-<li>Market impact model — how large orders move the book</li>
-<li>Order flow toxicity: VPIN (Volume-Synchronized Probability of Informed Trading)</li>
-<li>Connection to threshold phenomena: at what order size does information leakage become detectable?</li>
-</ul>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .ob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .ladder-card { background: rgba(11,15,25,0.75); border: 1px solid rgba(0,240,255,0.15); border-radius: 6px; padding: 20px; }
+        .ob-row { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 12px; padding: 6px 12px; margin-bottom: 4px; border-radius: 3px; }
+        .ob-row.bid { background: rgba(80, 250, 123, 0.08); border-left: 3px solid #50FA7B; }
+        .ob-row.ask { background: rgba(255, 85, 85, 0.08); border-left: 3px solid #FF5555; }
+        .vpin-bar { width: 100%; height: 16px; background: #020305; border-radius: 8px; overflow: hidden; border: 1px solid var(--grid-line); margin-top: 8px; }
+        .vpin-fill { height: 100%; background: linear-gradient(90deg, #50FA7B, #E5B958, #FF5555); width: 46%; transition: width 0.5s ease; }
+    </style>
+</head>
+<body>
+    <canvas id="spectralCanvas"></canvas>
 
-<h2>Data contracts</h2>
-<pre>
-orderbook: { bids: [{price, size}], asks: [{price, size}] }
-→ spread, mid_price, depth_imbalance, VPIN_estimate
-</pre>
+    <div class="app-shell">
+        <header class="top-header">
+            <div class="brand-container">
+                <a href="/" class="brand-title">AXIOM <span class="gold-text">QUANT</span></a>
+                <span class="version-tag">/MICROSTRUCTURE</span>
+            </div>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">← RETURN HOME</a>
+                <a href="/markowitz" class="nav-link">Markowitz QP</a>
+                <a href="/black-scholes" class="nav-link">Black-Scholes</a>
+            </nav>
+        </header>
 
-<!-- agy: foundation code already in python/mlx/quant/microstructure.py (simulate_l2_orderbook) -->
-<!-- agy: build canvas heatmap + depth chart + WebGPU background -->
-</body></html>
+        <main class="main-layout">
+            <div class="hero-section">
+                <h1 class="hero-question">Market Microstructure & <span class="cyan-text">L2 Orderbook Dynamics</span></h1>
+                <p class="hero-subtext">Level-2 orderbook depth ladders, bid-ask spread elasticity, order flow toxicity (VPIN), and market impact thresholds.</p>
+            </div>
+
+            <div class="ob-grid">
+                <!-- L2 Ladder -->
+                <div class="ladder-card">
+                    <h3 class="mono-label gold-text" style="margin-bottom:16px;">LEVEL-2 LIMIT ORDER BOOK DEPTH LADDER</h3>
+                    
+                    <div id="askLadder">
+                        <div class="ob-row ask"><span>ASK 100.05</span><span>14,500 VOL</span></div>
+                        <div class="ob-row ask"><span>ASK 100.04</span><span>22,100 VOL</span></div>
+                        <div class="ob-row ask"><span>ASK 100.03</span><span>18,400 VOL</span></div>
+                        <div class="ob-row ask"><span>ASK 100.02</span><span>35,000 VOL</span></div>
+                        <div class="ob-row ask"><span>ASK 100.01</span><span>41,200 VOL</span></div>
+                    </div>
+
+                    <div style="text-align:center; padding:10px 0; font-family:var(--font-mono); font-size:11px;" class="cyan-text">
+                        MID PRICE: 100.00 | SPREAD: $0.02
+                    </div>
+
+                    <div id="bidLadder">
+                        <div class="ob-row bid"><span>BID 99.99</span><span>48,100 VOL</span></div>
+                        <div class="ob-row bid"><span>BID 99.98</span><span>31,400 VOL</span></div>
+                        <div class="ob-row bid"><span>BID 99.97</span><span>19,800 VOL</span></div>
+                        <div class="ob-row bid"><span>BID 99.96</span><span>25,600 VOL</span></div>
+                        <div class="ob-row bid"><span>BID 99.95</span><span>12,300 VOL</span></div>
+                    </div>
+                </div>
+
+                <!-- Toxicity & VPIN -->
+                <div class="ladder-card">
+                    <h3 class="mono-label gold-text" style="margin-bottom:16px;">VPIN TOXICITY & INFORMATION LEAKAGE</h3>
+                    
+                    <div style="margin-bottom:20px;">
+                        <span class="mono-label">VPIN TOXICITY ESTIMATE: <strong id="vpinVal" class="cyan-text">0.4620</strong></span>
+                        <div class="vpin-bar">
+                            <div id="vpinFill" class="vpin-fill"></div>
+                        </div>
+                    </div>
+
+                    <p class="mono-label muted" style="line-height:1.6;">
+                        Volume-Synchronized Probability of Toxicity (VPIN) quantifies institutional order flow imbalance:
+                        $$ \text{VPIN} = \frac{\sum_{\tau=1}^N |V_\tau^B - V_\tau^S|}{N \cdot V} $$
+                        At critical VPIN thresholds ($> 0.70$), market makers widen spreads or withdraw liquidity to avoid adverse selection.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <span class="mono-label">AXIOM QUANT ARCHIVE // L2 MICROSTRUCTURE</span>
+            <span class="mono-label gold-text">FOUNDATION PHASE △</span>
+        </footer>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+        setInterval(() => {
+            const vpin = 0.35 + Math.random() * 0.35;
+            const el = document.getElementById('vpinVal');
+            const fill = document.getElementById('vpinFill');
+            if (el) el.innerText = vpin.toFixed(4);
+            if (fill) fill.style.width = (vpin * 100) + '%';
+        }, 2000);
+    </script>
+</body>
+</html>

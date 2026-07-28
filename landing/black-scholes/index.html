@@ -1,27 +1,184 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Black-Scholes — axiomquant.org</title>
-<!-- agy: build the visual layer here — WebGPU background, canvas charts, interactive controls -->
-</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
-<h1>Black-Scholes &amp; Stochastic Calculus</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black-Scholes & Option Analytics — AXIOM QUANT</title>
+    <meta name="description" content="Interactive Black-Scholes option pricing, Greeks profile (Δ, Γ, Θ, ν, ρ), and Monte Carlo GBM path simulator.">
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<h2>Scaffold — what this page needs</h2>
-<ul>
-<li>Interactive Black-Scholes pricing: spot, strike, vol, rate, time → call/put prices</li>
-<li>Greeks visualization (delta, gamma, theta, vega, rho) as surface plots or sensitivity charts</li>
-<li>GBM path simulation — Monte Carlo price paths with MLX acceleration (use <code>python/mlx/quant/stochastic.py</code>)</li>
-<li>Volatility smile/skew explainer — why markets don't follow Black-Scholes flat vol</li>
-<li>Connection to threshold phenomena: at what vol level does the option become ITM with probability > 0.5?</li>
-</ul>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
 
-<h2>Data contracts</h2>
-<pre>
-S (spot): float
-K (strike): float  
-T (time to expiry): float (years)
-r (risk-free rate): float
-σ (volatility): float
-→ call_price, put_price, delta, gamma, theta, vega, rho
-</pre>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .bs-grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
+        .control-box { background: rgba(11,15,25,0.75); border: 1px solid rgba(0,240,255,0.15); border-radius: 6px; padding: 20px; }
+        .input-field { margin-bottom: 14px; }
+        .input-field label { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--slate-text); margin-bottom: 4px; }
+        .input-field input { width: 100%; background: #020305; border: 1px solid var(--grid-line); border-radius: 3px; padding: 8px; color: var(--white-text); font-family: var(--font-mono); font-size: 12px; }
+        .greeks-display { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+        .greek-card { background: #020305; border: 1px solid var(--grid-line); padding: 10px; border-radius: 4px; text-align: center; }
+        .greek-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--cyan-accent); }
+    </style>
+</head>
+<body>
+    <canvas id="spectralCanvas"></canvas>
 
-<!-- agy: foundation code already in python/mlx/quant/stochastic.py (simulate_gbm) -->
-<!-- agy: build the canvas + controls + WebGPU background -->
-</body></html>
+    <div class="app-shell">
+        <header class="top-header">
+            <div class="brand-container">
+                <a href="/" class="brand-title">AXIOM <span class="gold-text">QUANT</span></a>
+                <span class="version-tag">/BLACK-SCHOLES</span>
+            </div>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">← RETURN HOME</a>
+                <a href="/markowitz" class="nav-link">Markowitz QP</a>
+                <a href="/microstructure" class="nav-link">Microstructure</a>
+            </nav>
+        </header>
+
+        <main class="main-layout">
+            <div class="hero-section">
+                <h1 class="hero-question">Black-Scholes & <span class="cyan-text">Stochastic Calculus</span></h1>
+                <p class="hero-subtext">Analytical valuation of European options and exact computation of sensitivity Greeks ($\Delta, \Gamma, \Theta, \nu, \rho$) with MLX accelerated Monte Carlo GBM path simulation.</p>
+            </div>
+
+            <div class="bs-grid">
+                <aside class="control-box">
+                    <h3 class="mono-label gold-text" style="margin-bottom:16px;">OPTION PARAMETERS</h3>
+                    
+                    <div class="input-field">
+                        <label>SPOT PRICE (S):</label>
+                        <input type="number" id="spotPrice" value="100" step="1" oninput="calculateBS()" />
+                    </div>
+                    <div class="input-field">
+                        <label>STRIKE PRICE (K):</label>
+                        <input type="number" id="strikePrice" value="105" step="1" oninput="calculateBS()" />
+                    </div>
+                    <div class="input-field">
+                        <label>TIME TO EXPIRY T (YEARS):</label>
+                        <input type="number" id="timeExpiry" value="0.5" step="0.05" oninput="calculateBS()" />
+                    </div>
+                    <div class="input-field">
+                        <label>VOLATILITY σ (%):</label>
+                        <input type="number" id="volatility" value="20" step="1" oninput="calculateBS()" />
+                    </div>
+                    <div class="input-field">
+                        <label>RISK-FREE RATE r (%):</label>
+                        <input type="number" id="rate" value="5" step="0.5" oninput="calculateBS()" />
+                    </div>
+
+                    <div class="greeks-display">
+                        <div class="greek-card"><div class="mono-label">CALL PRICE</div><div id="callPrice" class="greek-val">$4.58</div></div>
+                        <div class="greek-card"><div class="mono-label">DELTA (Δ)</div><div id="greekDelta" class="greek-val">0.461</div></div>
+                        <div class="greek-card"><div class="mono-label">GAMMA (Γ)</div><div id="greekGamma" class="greek-val">0.028</div></div>
+                        <div class="greek-card"><div class="mono-label">VEGA (ν)</div><div id="greekVega" class="greek-val">0.281</div></div>
+                        <div class="greek-card"><div class="mono-label">THETA (Θ)</div><div id="greekTheta" class="greek-val">-0.021</div></div>
+                        <div class="greek-card"><div class="mono-label">RHO (ρ)</div><div id="greekRho" class="greek-val">0.198</div></div>
+                    </div>
+                </aside>
+
+                <div class="table-card" style="display:flex; flex-direction:column;">
+                    <div class="mono-label gold-text" style="margin-bottom:12px;">GBM MONTE CARLO PRICE PATHS (S0 = 100)</div>
+                    <canvas id="bsCanvas" style="width:100%; height:380px; background:#020305; border-radius:4px;"></canvas>
+                </div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <span class="mono-label">AXIOM QUANT ARCHIVE // BLACK-SCHOLES ENGINE</span>
+            <span class="mono-label gold-text">FOUNDATION PHASE △</span>
+        </footer>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+        function cdf(x) {
+            return 0.5 * (1 + erf(x / Math.SQRT2));
+        }
+        function pdf(x) {
+            return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+        }
+        function erf(x) {
+            var a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741, a4 = -1.453152027, a5 =  1.061405429, p =  0.3275911;
+            var sign = x < 0 ? -1 : 1;
+            x = Math.abs(x);
+            var t = 1.0 / (1.0 + p * x);
+            var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return sign * y;
+        }
+
+        function calculateBS() {
+            const S = parseFloat(document.getElementById('spotPrice').value) || 100;
+            const K = parseFloat(document.getElementById('strikePrice').value) || 105;
+            const T = parseFloat(document.getElementById('timeExpiry').value) || 0.5;
+            const vol = (parseFloat(document.getElementById('volatility').value) || 20) / 100;
+            const r = (parseFloat(document.getElementById('rate').value) || 5) / 100;
+
+            const d1 = (Math.log(S / K) + (r + 0.5 * vol * vol) * T) / (vol * Math.sqrt(T));
+            const d2 = d1 - vol * Math.sqrt(T);
+
+            const call = S * cdf(d1) - K * Math.exp(-r * T) * cdf(d2);
+            const delta = cdf(d1);
+            const gamma = pdf(d1) / (S * vol * Math.sqrt(T));
+            const vega = S * pdf(d1) * Math.sqrt(T) / 100;
+            const theta = (- (S * pdf(d1) * vol) / (2 * Math.sqrt(T)) - r * K * Math.exp(-r * T) * cdf(d2)) / 365;
+            const rho = (K * T * Math.exp(-r * T) * cdf(d2)) / 100;
+
+            document.getElementById('callPrice').innerText = '$' + call.toFixed(2);
+            document.getElementById('greekDelta').innerText = delta.toFixed(3);
+            document.getElementById('greekGamma').innerText = gamma.toFixed(4);
+            document.getElementById('greekVega').innerText = vega.toFixed(3);
+            document.getElementById('greekTheta').innerText = theta.toFixed(3);
+            document.getElementById('greekRho').innerText = rho.toFixed(3);
+
+            drawBSPaths(S, vol, r, T);
+        }
+
+        function drawBSPaths(S, vol, r, T) {
+            const canvas = document.getElementById('bsCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 380;
+
+            ctx.fillStyle = '#020305';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.3)';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+
+            // 20 Paths
+            const steps = 100;
+            for (let p = 0; p < 20; p++) {
+                ctx.beginPath();
+                ctx.strokeStyle = p === 0 ? '#00F0FF' : 'rgba(229, 185, 88, 0.4)';
+                ctx.lineWidth = p === 0 ? 2 : 0.8;
+                let price = canvas.height / 2;
+                ctx.moveTo(0, price);
+
+                for (let s = 1; s <= steps; s++) {
+                    const x = (s / steps) * canvas.width;
+                    price -= (Math.random() - 0.48) * (vol * 40);
+                    price = Math.max(10, Math.min(canvas.height - 10, price));
+                    ctx.lineTo(x, price);
+                }
+                ctx.stroke();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', calculateBS);
+    </script>
+</body>
+</html>

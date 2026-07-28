@@ -1,30 +1,57 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Dyadic Analysis — axiomquant.org</title>
-<!-- agy: visual layer — dyadic tree, context graph, interactive transform explorer -->
-</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
-<h1>Dyadic Transformation &amp; Context Realizability</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dyadic Transformation & Context Realizability — AXIOM QUANT</title>
+    
+    <!-- MathJax -->
+    <script>window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<h2>Scaffold — what this page needs</h2>
-<ul>
-<li>Interactive dyadic transformation explorer: x → 2x mod 1, visual orbit diagram</li>
-<li>Context graph visualizer — nodes as measurement contexts, edges as transitions</li>
-<li>Spanning tree vs. cycle detection — highlight β₁ and its effect on realizability</li>
-<li>K₃ minimal witness: the triangle that forces complex amplitudes (interactive SVG)</li>
-<li>Connection to Erdős threshold: at what edge density does the graph become unrealizable?</li>
-</ul>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
 
-<h2>Data contracts</h2>
-<pre>
-graph: { vertices: n, edges: m, components: c }
-→ β₁ = m - n + c (cycle rank / first Betti number)
-→ realizability: "ℜ" if β₁ = 0, "ℂ" if β₁ ≥ 1
-</pre>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <canvas id="spectralCanvas"></canvas>
 
-<h2>References</h2>
-<ul>
-<li>Dyadic transformation: https://en.wikipedia.org/wiki/Dyadic_transformation</li>
-<li>Dyad analysis in plant ecology: https://rsat.eead.csic.es/plants/help.dyad-analysis.html</li>
-<li>GitHub: https://github.com/peterlodri-sec/dyad-mapping</li>
-</ul>
+    <div class="app-shell">
+        <header class="top-header">
+            <div class="brand-container">
+                <a href="/" class="brand-title">AXIOM <span class="gold-text">QUANT</span></a>
+                <span class="version-tag">/DYADIC</span>
+            </div>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">← RETURN HOME</a>
+                <a href="/markowitz" class="nav-link">Markowitz QP</a>
+                <a href="/thresholds" class="nav-link">ER Phase</a>
+            </nav>
+        </header>
 
-<!-- agy: build the interactive graph canvas + WebGPU background -->
-</body></html>
+        <main class="main-layout">
+            <div class="hero-section">
+                <h1 class="hero-question">Dyadic Transformation & <span class="cyan-text">Context Realizability</span></h1>
+                <p class="hero-subtext">Chapter 5 of the monograph: dyadic shift maps $x \mapsto 2x \pmod 1$, spanning tree decomposition, and structural observability depth $d_{\text{obs}}(A)$.</p>
+            </div>
+
+            <div class="table-card" style="padding:24px;">
+                <h3 class="mono-label gold-text" style="margin-bottom:16px;">DYADIC CYCLE TOPOLOGY</h3>
+                <p class="paper-abstract">
+                    The dyadic map generates exact binary tree representations of context state spaces. When lifted to transition matrices, path interference creates topological obstructions that distinguish tree-like context trees ($\beta_1 = 0$) from cyclic networks ($\beta_1 > 0$).
+                </p>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <span class="mono-label">AXIOM QUANT ARCHIVE // DYADIC TRANSFORMATIONS</span>
+            <span class="mono-label gold-text">FOUNDATION PHASE △</span>
+        </footer>
+    </div>
+
+    <script src="../script.js"></script>
+</body>
+</html>

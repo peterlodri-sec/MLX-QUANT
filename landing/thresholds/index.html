@@ -1,34 +1,69 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Threshold Phenomena — axiomquant.org</title>
-<!-- agy: visual layer — interactive threshold explorer, slider-driven phase transition canvas -->
-</head><body style="background:#070b16;color:#c8d6e5;font-family:monospace;padding:24px">
-<h1>Threshold Phenomena — Graph × Quant Crossover</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erdős–Rényi Density Thresholds — AXIOM QUANT</title>
+    
+    <!-- MathJax -->
+    <script>window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<h2>Scaffold — what this page needs</h2>
-<ul>
-<li><b>Graph threshold</b>: Erdős–Rényi G(n,p) — slider for p, canvas showing component emergence at p=1/n</li>
-<li><b>Ternary threshold</b>: BitNet quantization — slider for scale, canvas showing weight distribution collapse to {-1,0,1}</li>
-<li><b>Portfolio threshold</b>: Markowitz frontier — slider for target return, show asset weights crossing zero</li>
-<li><b>Option threshold</b>: Black-Scholes — slider for vol, show probability of ITM crossing 0.5</li>
-<li><b>Cycle threshold</b>: β₁ diagram — show real→complex→quaternionic→octonionic field extensions at β₁ = 0,1,2,4</li>
-<li>Unified canvas: all five threshold phenomena compared side-by-side with synchronized sliders</li>
-</ul>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
 
-<h2>Unifying principle</h2>
-<pre>
-All threshold phenomena share the same structure:
-  
-  Below critical value: disordered / fragmented / real
-  At critical value:     sharp transition / phase change
-  Above critical value:  ordered / connected / complex
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <canvas id="spectralCanvas"></canvas>
 
-The critical value is always a function of the system parameters:
-  Graph:      p_c = 1/n
-  Ternary:    scale = mean(|w|)  →  round(w/scale) flips at 0.5
-  Portfolio:  λ such that w_i(λ) crosses from 0 to positive
-  Options:    σ such that P(ITM) > 0.5
-  Cycles:     β₁ ≥ 1 triggers holonomy that forces ℂ
-</pre>
+    <div class="app-shell">
+        <header class="top-header">
+            <div class="brand-container">
+                <a href="/" class="brand-title">AXIOM <span class="gold-text">QUANT</span></a>
+                <span class="version-tag">/THRESHOLDS</span>
+            </div>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">← RETURN HOME</a>
+                <a href="/markowitz" class="nav-link">Markowitz QP</a>
+                <a href="/black-scholes" class="nav-link">Black-Scholes</a>
+            </nav>
+        </header>
 
-<!-- agy: build the unified threshold canvas with 5 synchronized panels -->
-<!-- agy: each panel gets an interactive slider controlling its critical parameter -->
-</body></html>
+        <main class="main-layout">
+            <div class="hero-section">
+                <h1 class="hero-question">Density Thresholds & <span class="cyan-text">Erdős Phase Transitions</span></h1>
+                <p class="hero-subtext">At what edge probability $p_c = 1/|V|$ does the cycle rank $\beta_1$ transition from zero to non-zero, forcing field extensions beyond $\mathbb{R}$?</p>
+            </div>
+
+            <div class="table-card" style="padding:24px;">
+                <h3 class="mono-label gold-text" style="margin-bottom:16px;">ERDŐS–RÉNYI GRAPH EVOLUTION PHASES</h3>
+                
+                <div class="paper-card">
+                    <h4>Phase 1: Subcritical ($p < 1/n$)</h4>
+                    <p class="paper-abstract">The graph is a forest of small trees ($\beta_1 = 0$). All contextual transition assignments are strictly $\mathbb{R}$-realizable.</p>
+                </div>
+
+                <div class="paper-card">
+                    <h4>Phase 2: Critical ($p = 1/n$)</h4>
+                    <p class="paper-abstract">The minimal forbidden subgraph $K_3$ (triangle) emerges with high probability ($\beta_1 = 1$). Complex field amplitudes $\mathbb{C}$ become necessary.</p>
+                </div>
+
+                <div class="paper-card">
+                    <h4>Phase 3: Supercritical ($p > 1/n$)</h4>
+                    <p class="paper-abstract">A giant component containing dense cycle networks ($\beta_1 \ge 4$) forms, forcing higher-dimensional field extensions ($\mathbb{H}, \mathbb{O}$).</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <span class="mono-label">AXIOM QUANT ARCHIVE // DENSITY THRESHOLDS</span>
+            <span class="mono-label gold-text">FOUNDATION PHASE △</span>
+        </footer>
+    </div>
+
+    <script src="../script.js"></script>
+</body>
+</html>
