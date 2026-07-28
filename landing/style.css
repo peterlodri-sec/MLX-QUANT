@@ -1,0 +1,35 @@
+/* axiomquant.org — research archive */
+:root{--bg:#070b16;--fg:#c8d6e5;--accent:#6c5ce7;--gold:#ffd700;--red:#ff4747;--muted:#636e72}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:'JetBrains Mono',monospace;line-height:1.7}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:#a29bfe}
+header{padding:24px 32px;border-bottom:1px solid rgba(108,92,231,.1);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h1{font-size:16px;font-weight:400;letter-spacing:.35em;color:var(--accent)}
+header h1 span{color:var(--gold)}
+nav{display:flex;gap:16px;flex-wrap:wrap}
+nav a{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+nav a:hover,nav a.active{color:var(--fg)}
+main{max-width:880px;margin:0 auto;padding:32px 24px}
+.hero{margin-bottom:48px}
+.hero h2{font-size:28px;font-weight:400;color:var(--fg);letter-spacing:.05em;margin-bottom:16px}
+.hero h2 em{color:var(--accent);font-style:normal}
+.hero p{color:var(--muted);font-size:14px;max-width:640px}
+.section{margin-bottom:40px}
+.section h3{font-size:13px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(108,92,231,.15)}
+.paper{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:16px;margin-bottom:12px}
+.paper h4{font-size:13px;color:var(--fg);margin-bottom:4px}
+.paper .authors{font-size:10px;color:var(--muted);margin-bottom:6px}
+.paper .abstract{font-size:11px;color:var(--muted);line-height:1.6}
+.paper .links{font-size:10px;margin-top:8px}
+.paper .links a{color:var(--accent);margin-right:12px}
+.tag{display:inline-block;background:rgba(108,92,231,.1);color:var(--accent);font-size:9px;padding:2px 8px;border-radius:10px;margin-right:4px}
+.theorem{background:rgba(255,215,0,.03);border-left:3px solid var(--gold);padding:14px 18px;margin:16px 0;border-radius:0 6px 6px 0;font-size:12px}
+.theorem .thm-name{color:var(--gold);font-weight:700;margin-bottom:6px}
+.threshold-table{width:100%;border-collapse:collapse;font-size:11px;margin:12px 0}
+.threshold-table th{text-align:left;color:var(--accent);padding:6px 8px;border-bottom:1px solid rgba(108,92,231,.15);font-weight:400;letter-spacing:.1em;text-transform:uppercase}
+.threshold-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--muted)}
+.threshold-table td:first-child{color:var(--fg)}
+footer{padding:24px 32px;border-top:1px solid rgba(108,92,231,.1);text-align:center;font-size:10px;color:var(--muted)}
+footer a{color:var(--accent)}
+@media(max-width:600px){header{flex-direction:column;align-items:flex-start} header h1{font-size:14px} .hero h2{font-size:20px} main{padding:16px 12px}}
