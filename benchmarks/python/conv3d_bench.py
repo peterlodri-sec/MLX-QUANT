@@ -130,7 +130,7 @@ if __name__ == "__main__":
     )
 
     for dtype in dtypes:
-        print(f"\n{'=' * 120}" f"\n  dtype: {dtype}" f"\n{'=' * 120}")
+        print(f"\n{'=' * 120}\n  dtype: {dtype}\n{'=' * 120}")
         print(
             f"{'(N,   D,   H,   W,   C)':<26s} {'(  O, kD, kH, kW,   C)':<24s} "
             f"{'stride':<12s} {'pads':<12s} {'groups':>6s} "
@@ -147,6 +147,6 @@ if __name__ == "__main__":
             print(
                 f"({N}, {D:3d}, {H:3d}, {W:3d}, {C:3d}), ({O:3d}, {kD:2d}, {kH:2d}, {kW:2d}, {C:3d}), "
                 f"{strides}, {padding}, {groups:6d}, "
-                f"{100. * diff:+6.1f}%  "
+                f"{100.0 * diff:+6.1f}%  "
                 f"{mlx_peak:8.1f}  {mlx_act:7.1f}  {pt_cur:7.1f}  {pt_drv:7.1f}"
             )

@@ -26,7 +26,6 @@ class MLP(nn.Module):
 
 
 if __name__ == "__main__":
-
     batch_size = 8
     input_dim = 32
     output_dim = 10

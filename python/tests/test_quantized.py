@@ -1944,10 +1944,8 @@ class TestQuantized(mlx_tests.MLXTestCase):
         for M, K, N in [(1, 64, 64), (1, 256, 256), (4, 64, 64)]:
             x = mx.random.normal((M, K))
             w = mx.random.normal((N, K))
-            w_q, scales = mx.quantize(
-                w, group_size=64, bits=2, mode="ternary")
-            y = mx.quantized_matmul(
-                x, w_q, scales, group_size=64, bits=2, mode="maybe")
+            w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
+            y = mx.quantized_matmul(x, w_q, scales, group_size=64, bits=2, mode="maybe")
             mx.eval(y)
             self.assertEqual(y.shape, (M, N))
             self.assertEqual(y.dtype, mx.float32)
@@ -1958,10 +1956,10 @@ class TestQuantized(mlx_tests.MLXTestCase):
         for M, K, N in [(1, 64, 64), (1, 256, 256), (4, 64, 64)]:
             x = mx.random.normal((M, K))
             w = mx.random.normal((N, K))
-            w_q, scales = mx.quantize(
-                w, group_size=64, bits=2, mode="ternary")
+            w_q, scales = mx.quantize(w, group_size=64, bits=2, mode="ternary")
             y = mx.quantized_matmul(
-                x, w_q, scales, group_size=64, bits=2, mode="mergeq")
+                x, w_q, scales, group_size=64, bits=2, mode="mergeq"
+            )
             mx.eval(y)
             self.assertEqual(y.shape, (M, N))
             self.assertEqual(y.dtype, mx.float32)

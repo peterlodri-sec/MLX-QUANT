@@ -967,7 +967,8 @@ template <typename T, const int group_size, const int bits>
   static_assert(bits == 2);
 
   int n = tid;
-  if (n >= N) return;
+  if (n >= N)
+    return;
 
   constexpr float eps = 1e-7;
   constexpr int SIMD = SIMD_SIZE;
@@ -1019,7 +1020,8 @@ template <typename T, const int group_size, const int bits>
     uint tid [[thread_position_in_grid]]) {
   static_assert(bits == 2);
 
-  if (tid >= N) return;
+  if (tid >= N)
+    return;
 
   constexpr float eps = 1e-7;
   int row = tid / N;

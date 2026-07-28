@@ -74,7 +74,6 @@ def mlx_ref_attn(q, k, v, scale=1.0, mask=None):
     scores = q @ mx.swapaxes(k, -1, -2)
 
     if mask is not None:
-
         if mask == "causal":
             q_offset = max(0, kL - L)
             q_indices = mx.arange(q_offset, q_offset + L)
@@ -225,5 +224,5 @@ if __name__ == "__main__":
                     diff = time_mlx_unfused / time_mlx_fused - 1.0
                     t_str = 1 if transpose else 0
                     print(
-                        f"{B:3d}, {qsl:5d}, {ksl:5d}, {head_dim:4d}, {n_q_heads:4d}, {n_kv_heads:5d}, {t_str:1d}, {dtype}, {str(mask_in):>8}, {time_mlx_unfused: 2.3f}, {time_mlx_fused: 2.3f}, {100. * diff:+5.2f}%"
+                        f"{B:3d}, {qsl:5d}, {ksl:5d}, {head_dim:4d}, {n_q_heads:4d}, {n_kv_heads:5d}, {t_str:1d}, {dtype}, {str(mask_in):>8}, {time_mlx_unfused: 2.3f}, {time_mlx_fused: 2.3f}, {100.0 * diff:+5.2f}%"
                     )

@@ -175,7 +175,7 @@ class MultiOptimizer(Optimizer):
 
         if len(filters) != len(optimizers) - 1:
             raise ValueError(
-                f"Given {len(filters)} filters but {len(optimizers)-1} needed."
+                f"Given {len(filters)} filters but {len(optimizers) - 1} needed."
             )
 
         self.optimizers = optimizers
@@ -893,9 +893,9 @@ class Muon(Optimizer):
         state["v"] = mx.zeros_like(parameter)
 
     def _zeropower_via_newtonschulz5(self, X, steps: int):
-        assert (
-            X.ndim == 2
-        ), f"Expected a 2D array for Newton-Schulz iteration, got shape {X.shape} instead."
+        assert X.ndim == 2, (
+            f"Expected a 2D array for Newton-Schulz iteration, got shape {X.shape} instead."
+        )
         a, b, c = (3.4445, -4.7750, 2.0315)
         transpose_needed = X.shape[-2] > X.shape[-1]
 

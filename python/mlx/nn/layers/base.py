@@ -501,8 +501,10 @@ class Module(dict):
             if local_keys is None:
                 local_keys = tree_flatten(
                     m.filter_and_map(
-                        lambda m, k, v: (not isinstance(v, Module))
-                        and m.valid_parameter_filter(m, k, v)
+                        lambda m, k, v: (
+                            (not isinstance(v, Module))
+                            and m.valid_parameter_filter(m, k, v)
+                        )
                     )
                 )
                 local_keys = [k for (k, v) in local_keys]

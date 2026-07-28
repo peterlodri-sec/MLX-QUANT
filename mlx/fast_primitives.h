@@ -543,8 +543,7 @@ class MaybeQuantMatmul : public Custom {
 
   void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
       override {
-    throw std::runtime_error(
-        "[MaybeQuantMatmul] GPU-only primitive.");
+    throw std::runtime_error("[MaybeQuantMatmul] GPU-only primitive.");
   }
 
   void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)
@@ -572,8 +571,7 @@ class MergeQuantMatmul : public Custom {
 
   void eval_cpu(const std::vector<array>& inputs, std::vector<array>& outputs)
       override {
-    throw std::runtime_error(
-        "[MergeQuantMatmul] GPU-only primitive.");
+    throw std::runtime_error("[MergeQuantMatmul] GPU-only primitive.");
   }
 
   void eval_gpu(const std::vector<array>& inputs, std::vector<array>& outputs)

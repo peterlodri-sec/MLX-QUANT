@@ -8,7 +8,6 @@ import numpy as np
 
 
 class TestEinsum(mlx_tests.MLXTestCase):
-
     def test_simple_path(self):
         a = mx.zeros((5, 5))
         path = mx.einsum_path("ii", a)

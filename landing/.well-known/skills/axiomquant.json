@@ -1,0 +1,22 @@
+{
+  "name": "axiomquant",
+  "version": "1.0.0",
+  "description": "Axiom Quant skill for quantitative calculus, graph realizability, BitNet b1.58 ternary quantization, Markowitz QP solvers, and Backyard Ultra Loop Engineering.",
+  "schema": "https://axiomquant.org/.well-known/skills/axiomquant.json",
+  "skill_url": "https://axiomquant.org/skills/axiomquant/SKILL.md",
+  "author": "N. Flyxion & P. Lodri",
+  "gcp_project": "axiomquant",
+  "capabilities": [
+    "markowitz_qp_solver",
+    "black_scholes_greeks",
+    "erdos_renyi_phase_transitions",
+    "cycle_rank_beta1_realizability",
+    "bitnet_ternary_quantization",
+    "backyard_ultra_loop_engineering"
+  ],
+  "api_endpoints": {
+    "adk_agent": "https://axiomquant.org/api/v1/adk/agent",
+    "markowitz": "https://axiomquant.org/api/v1/markowitz",
+    "black_scholes": "https://axiomquant.org/api/v1/black-scholes"
+  }
+}

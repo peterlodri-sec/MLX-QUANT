@@ -2070,7 +2070,8 @@ void fast::MaybeQuant::eval_gpu(
   std::string kname;
   kname.reserve(64);
   std::string type_string = get_type_string(w.dtype());
-  concatenate(kname, "ternary_maybequant_", type_string, "_gs_", group_size_, "_b_2");
+  concatenate(
+      kname, "ternary_maybequant_", type_string, "_gs_", group_size_, "_b_2");
   auto kernel = get_quantized_kernel_wrapped(
       d, kname, "maybequant", "ternary", type_string, group_size_, 2);
 
@@ -2107,7 +2108,13 @@ void fast::MaybeQuantMatmul::eval_gpu(
   std::string kname;
   kname.reserve(64);
   std::string type_string = get_type_string(x.dtype());
-  concatenate(kname, "ternary_maybequant_matmul_", type_string, "_gs_", group_size_, "_b_2");
+  concatenate(
+      kname,
+      "ternary_maybequant_matmul_",
+      type_string,
+      "_gs_",
+      group_size_,
+      "_b_2");
   auto kernel = get_quantized_kernel_wrapped(
       d, kname, "maybequant_matmul", "ternary", type_string, group_size_, 2);
 
@@ -2147,7 +2154,13 @@ void fast::MergeQuantMatmul::eval_gpu(
   std::string kname;
   kname.reserve(64);
   std::string type_string = get_type_string(x.dtype());
-  concatenate(kname, "ternary_mergequant_matmul_", type_string, "_gs_", group_size_, "_b_2");
+  concatenate(
+      kname,
+      "ternary_mergequant_matmul_",
+      type_string,
+      "_gs_",
+      group_size_,
+      "_b_2");
   auto kernel = get_quantized_kernel_wrapped(
       d, kname, "mergequant_matmul", "ternary", type_string, group_size_, 2);
 

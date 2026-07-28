@@ -4594,9 +4594,9 @@ std::pair<Dtype, QuantizationMode> validate_mode_with_type(
     } else {
       return {dtype, qmode};
     }
-  } else if (qmode == QuantizationMode::Ternary ||
-             qmode == QuantizationMode::Maybe ||
-             qmode == QuantizationMode::Mergeq) {
+  } else if (
+      qmode == QuantizationMode::Ternary || qmode == QuantizationMode::Maybe ||
+      qmode == QuantizationMode::Mergeq) {
     // Ternary is zero-symmetric: one real floating-point scale per group
     // (mean(|w|)), no bias -- a third contract, distinct from both affine
     // (float scale + bias) and the fp family (uint8 microscaling exponent,
@@ -4701,9 +4701,9 @@ array quantized_matmul(
   if (qmode == QuantizationMode::Affine) {
     inputs = {
         astype(x, dtype), w, astype(scales, dtype), astype(*biases, dtype)};
-  } else if (qmode == QuantizationMode::Ternary ||
-             qmode == QuantizationMode::Maybe ||
-             qmode == QuantizationMode::Mergeq) {
+  } else if (
+      qmode == QuantizationMode::Ternary || qmode == QuantizationMode::Maybe ||
+      qmode == QuantizationMode::Mergeq) {
     // Unlike the fp family (scales always uint8, decoded in-kernel -- no
     // ambiguity), ternary's scales are a real floating dtype that the
     // CPU/GPU kernels read via an unchecked reinterpret_cast keyed on x's
@@ -4896,8 +4896,8 @@ array quantized_matmul(
   }
 
   // maybe — probabilistic ternary quantized matmul (GPU only, non-batched)
-  if (qmode == QuantizationMode::Maybe &&
-      to_stream(s).device == Device::gpu && w.ndim() == 2) {
+  if (qmode == QuantizationMode::Maybe && to_stream(s).device == Device::gpu &&
+      w.ndim() == 2) {
     auto fallback =
         [group_size, bits, s, transpose](
             const std::vector<array>& inputs) -> std::vector<array> {
@@ -4905,7 +4905,15 @@ array quantized_matmul(
       auto& w = inputs[1];
       auto& scales = inputs[2];
       array w_dense = dequantize(
-          w, scales, std::nullopt, group_size, bits, "ternary", std::nullopt, x.dtype(), s);
+          w,
+          scales,
+          std::nullopt,
+          group_size,
+          bits,
+          "ternary",
+          std::nullopt,
+          x.dtype(),
+          s);
       return {matmul(x, transpose ? swapaxes(w_dense, -1, -2, s) : w_dense, s)};
     };
     auto out_shape = inputs[0].shape();
@@ -4919,8 +4927,8 @@ array quantized_matmul(
   }
 
   // mergeq — triple-fused quantize+dequantize+matmul (GPU only, non-batched)
-  if (qmode == QuantizationMode::Mergeq &&
-      to_stream(s).device == Device::gpu && w.ndim() == 2) {
+  if (qmode == QuantizationMode::Mergeq && to_stream(s).device == Device::gpu &&
+      w.ndim() == 2) {
     auto fallback =
         [group_size, bits, s, transpose](
             const std::vector<array>& inputs) -> std::vector<array> {
@@ -4928,7 +4936,15 @@ array quantized_matmul(
       auto& w = inputs[1];
       auto& scales = inputs[2];
       array w_dense = dequantize(
-          w, scales, std::nullopt, group_size, bits, "ternary", std::nullopt, x.dtype(), s);
+          w,
+          scales,
+          std::nullopt,
+          group_size,
+          bits,
+          "ternary",
+          std::nullopt,
+          x.dtype(),
+          s);
       return {matmul(x, transpose ? swapaxes(w_dense, -1, -2, s) : w_dense, s)};
     };
     auto out_shape = inputs[0].shape();
@@ -5530,9 +5546,9 @@ std::vector<array> quantize(
   validate_global_scale("quantize", qmode, global_scale);
   if (qmode == QuantizationMode::Affine) {
     return affine_quantize(w, group_size, bits, s);
-  } else if (qmode == QuantizationMode::Ternary ||
-             qmode == QuantizationMode::Maybe ||
-             qmode == QuantizationMode::Mergeq) {
+  } else if (
+      qmode == QuantizationMode::Ternary || qmode == QuantizationMode::Maybe ||
+      qmode == QuantizationMode::Mergeq) {
     return ternary_quantize(w, group_size, bits, s);
   } else {
     return fp_quantize(w, group_size, bits, qmode, global_scale, to_stream(s));
@@ -5804,9 +5820,9 @@ array dequantize(
         affine_dequantize(w, scales, *biases, group_size, bits, s),
         out_type,
         s);
-  } else if (qmode == QuantizationMode::Ternary ||
-             qmode == QuantizationMode::Maybe ||
-             qmode == QuantizationMode::Mergeq) {
+  } else if (
+      qmode == QuantizationMode::Ternary || qmode == QuantizationMode::Maybe ||
+      qmode == QuantizationMode::Mergeq) {
     return astype(
         ternary_dequantize(w, scales, group_size, bits, s), out_type, s);
   } else {
@@ -5918,8 +5934,7 @@ array gather_qmm(
   lhs_indices = astype(lhs_indices, uint32, s);
   rhs_indices = astype(rhs_indices, uint32, s);
 
-  if (qmode == QuantizationMode::Ternary ||
-      qmode == QuantizationMode::Maybe ||
+  if (qmode == QuantizationMode::Ternary || qmode == QuantizationMode::Maybe ||
       qmode == QuantizationMode::Mergeq) {
     // No native gather_qmm kernel exists for ternary (CPU or GPU) yet --
     // compose a correct answer from the real ternary_dequantize kernel

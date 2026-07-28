@@ -309,9 +309,11 @@ class TestConv(mlx_tests.MLXTestCase):
                     lambda x: mx.array(x).astype(mx_dtype), (in_np, wt_np)
                 )
                 in_pt, wt_pt = map(
-                    lambda x: torch.from_numpy(x.transpose(0, 3, 1, 2))
-                    .to("cpu")
-                    .to(torch_dtype),
+                    lambda x: (
+                        torch.from_numpy(x.transpose(0, 3, 1, 2))
+                        .to("cpu")
+                        .to(torch_dtype)
+                    ),
                     (in_np, wt_np),
                 )
 
@@ -1069,7 +1071,6 @@ class TestConv(mlx_tests.MLXTestCase):
 
     @unittest.skipIf(not has_torch, "requires Torch")
     def test_torch_conv_depthwise(self):
-
         # fmt: off
         shapes = (
             # N,   H,   W,    C   kH,  kW,   O, strides, padding,  groups

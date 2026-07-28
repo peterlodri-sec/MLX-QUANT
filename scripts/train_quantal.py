@@ -28,11 +28,12 @@ import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as opt
 import numpy as np
-from mlx.nn.layers.bitlinear import BitLinear, weight_quant, activation_quant
+from mlx.nn.layers.bitlinear import BitLinear, activation_quant, weight_quant
 
 # ---------------------------------------------------------------------------
 # 1.  Model surgery — replace nn.Linear with BitLinear
 # ---------------------------------------------------------------------------
+
 
 def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
     """Walk the module tree and replace every ``nn.Linear`` with a
@@ -83,6 +84,7 @@ def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
 # 2.  Dataset helpers
 # ---------------------------------------------------------------------------
 
+
 def load_jsonl(path: str, max_samples: Optional[int] = None):
     """Load text samples from a .jsonl or .jsonl.gz file."""
     open_fn = gzip.open if path.endswith(".gz") else open
@@ -108,10 +110,7 @@ def load_jsonl(path: str, max_samples: Optional[int] = None):
 def tokenize_fn(tokenizer, texts: list[str], max_len: int = 512):
     """Tokenize a list of texts into MLX arrays."""
     if tokenizer is None:
-        return [
-            mx.array([ord(c) for c in t[:max_len]], dtype=mx.uint32)
-            for t in texts
-        ]
+        return [mx.array([ord(c) for c in t[:max_len]], dtype=mx.uint32) for t in texts]
     enc = tokenizer(
         texts,
         truncation=True,
@@ -126,6 +125,7 @@ def tokenize_fn(tokenizer, texts: list[str], max_len: int = 512):
 # 3.  Loss function (causal LM)
 # ---------------------------------------------------------------------------
 
+
 def ce_loss(logits: mx.array, targets: mx.array) -> mx.array:
     """Cross-entropy for causal LM: predict next token."""
     logits = logits[:, :-1, :]
@@ -137,6 +137,7 @@ def ce_loss(logits: mx.array, targets: mx.array) -> mx.array:
 # ---------------------------------------------------------------------------
 # 4.  Linear → TernaryMatrix export (ayeOS format)
 # ---------------------------------------------------------------------------
+
 
 def export_to_ayeos(
     model: nn.Module,
@@ -196,6 +197,7 @@ def export_to_ayeos(
 # 5.  Training loop
 # ---------------------------------------------------------------------------
 
+
 def train_step(model, inputs, targets, optimizer):
     """Single training step with loss value for logging."""
 
@@ -204,8 +206,9 @@ def train_step(model, inputs, targets, optimizer):
         logits = model(inputs)
         return ce_loss(logits, targets)
 
-    loss, grads = loss_fn(model.trainable_parameters()), mx.grad(loss_fn)(
-        model.trainable_parameters()
+    loss, grads = (
+        loss_fn(model.trainable_parameters()),
+        mx.grad(loss_fn)(model.trainable_parameters()),
     )
     optimizer.update(model, grads)
     return loss
@@ -220,6 +223,7 @@ def evaluate(model, val_inputs, val_targets):
 # 6.  CLI
 # ---------------------------------------------------------------------------
 
+
 def build_parser():
     p = argparse.ArgumentParser(
         description="Train a ternary (BitNet b1.58) model using MLX-QUANT"
@@ -231,10 +235,20 @@ def build_parser():
     p.add_argument("--batch-size", type=int, default=4, help="Per-device batch size")
     p.add_argument("--epochs", type=int, default=3, help="Number of epochs")
     p.add_argument("--max-len", type=int, default=512, help="Max sequence length")
-    p.add_argument("--max-samples", type=int, default=None, help="Limit training samples")
-    p.add_argument("--binary", action="store_true", help="Use binary (provably 1-bit) instead of ternary")
-    p.add_argument("--export", default="quantal_model.ayeos.json", help="ayeOS export path")
-    p.add_argument("--save", default="quantal_model.safetensors", help="Save checkpoint path")
+    p.add_argument(
+        "--max-samples", type=int, default=None, help="Limit training samples"
+    )
+    p.add_argument(
+        "--binary",
+        action="store_true",
+        help="Use binary (provably 1-bit) instead of ternary",
+    )
+    p.add_argument(
+        "--export", default="quantal_model.ayeos.json", help="ayeOS export path"
+    )
+    p.add_argument(
+        "--save", default="quantal_model.safetensors", help="Save checkpoint path"
+    )
     p.add_argument("--group-size", type=int, default=64, help="Quantization group size")
     p.add_argument("--seed", type=int, default=42, help="Random seed")
     return p
@@ -291,7 +305,9 @@ def main():
 
     val_samples = []
     if args.val_data:
-        val_samples = load_jsonl(args.val_data, max_samples=min(args.max_samples or 100, 100))
+        val_samples = load_jsonl(
+            args.val_data, max_samples=min(args.max_samples or 100, 100)
+        )
         print(f"   {len(val_samples)} validation samples")
 
     if not val_samples and len(samples) > 100:
@@ -314,7 +330,7 @@ def main():
         idxs = np.random.permutation(len(samples))
 
         for batch_idx in range(0, len(idxs), args.batch_size):
-            batch_idxs = idxs[batch_idx: batch_idx + args.batch_size]
+            batch_idxs = idxs[batch_idx : batch_idx + args.batch_size]
             batch_texts = [samples[i] for i in batch_idxs]
 
             tokens = tokenize_fn(tokenizer, batch_texts, args.max_len)

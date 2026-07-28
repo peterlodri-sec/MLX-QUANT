@@ -11,7 +11,6 @@ import mlx_tests
 
 
 class TestExportImport(mlx_tests.MLXTestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.test_dir_fid = tempfile.TemporaryDirectory()

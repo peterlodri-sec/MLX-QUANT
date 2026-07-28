@@ -3,21 +3,47 @@
     "black-scholes": {
       "key_formula": "C = N(d+)S - N(d-)Ke^(-rT)",
       "pde": "∂V/∂t + ½σ²S²∂²V/∂S² + rS∂V/∂S - rV = 0",
-      "greeks": ["delta=∂C/∂S", "gamma=∂²C/∂S²", "theta=∂C/∂t", "vega=∂C/∂σ", "rho=∂C/∂r"],
-      "threshold_connection": "σ such that P(ITM) > 0.5 — d± as moneyness measures in standard deviations",
-      "limitations": "volatility smile shows constant-σ assumption false; fat tails, jumps not captured"
+      "greeks": [
+        "delta=∂C/∂S",
+        "gamma=∂²C/∂S²",
+        "theta=∂C/∂t",
+        "vega=∂C/∂σ",
+        "rho=∂C/∂r"
+      ],
+      "threshold_connection":
+          "σ such that P(ITM) > 0.5 — d± as moneyness measures in standard deviations",
+      "limitations":
+          "volatility smile shows constant-σ assumption false; fat tails, jumps not captured"
     },
     "microstructure": {
-      "key_concepts": ["bid-ask spread", "market impact", "Kyle's lambda", "VPIN", "Epps effect"],
-      "threshold_connection": "order size at which information leakage becomes detectable — the Almgren-Chriss optimal execution frontier",
-      "ohlc_model": "框架: order processing costs + adverse selection + inventory holding + monopoly power"
+      "key_concepts": [
+        "bid-ask spread",
+        "market impact",
+        "Kyle's lambda",
+        "VPIN",
+        "Epps effect"
+      ],
+      "threshold_connection":
+          "order size at which information leakage becomes detectable — the Almgren-Chriss optimal execution frontier",
+      "ohlc_model":
+          "框架: order processing costs + adverse selection + inventory holding + monopoly power"
     },
     "dyadic": {
-      "definition": "T(x) = 2x mod 1 — bit shift map, Bernoulli map, doubling map",
-      "chaos": "1 bit of information lost per iteration; irrationals → chaotic, rationals → periodic",
-      "generators": "Rényi β-transformation: T_β(x) = βx mod 1 — generalizes to arbitrary β",
-      "connections": ["Cantor set", "tent map", "logistic map r=4", "Frobenius-Perron operator", "Ising model"],
-      "threshold_connection": "β=2 is the critical value for the Bernoulli process; below 2, information preserves"
+      "definition":
+          "T(x) = 2x mod 1 — bit shift map, Bernoulli map, doubling map",
+      "chaos":
+          "1 bit of information lost per iteration; irrationals → chaotic, rationals → periodic",
+      "generators":
+          "Rényi β-transformation: T_β(x) = βx mod 1 — generalizes to arbitrary β",
+      "connections": [
+        "Cantor set",
+        "tent map",
+        "logistic map r=4",
+        "Frobenius-Perron operator",
+        "Ising model"
+      ],
+      "threshold_connection":
+          "β=2 is the critical value for the Bernoulli process; below 2, information preserves"
     }
   }
 }

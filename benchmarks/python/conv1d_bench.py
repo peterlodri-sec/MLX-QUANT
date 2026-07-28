@@ -116,7 +116,7 @@ if __name__ == "__main__":
             diff = time_torch / time_mlx - 1.0
 
             print(
-                f"({N}, {iH:3d}, {C:3d}), ({O:3d}, {wH:2d}, {C:3d}), {dtype}, {strides:5d}, {padding:4d}, {groups:6d}, {100. * diff:+5.2f}%"
+                f"({N}, {iH:3d}, {C:3d}), ({O:3d}, {wH:2d}, {C:3d}), {dtype}, {strides:5d}, {padding:4d}, {groups:6d}, {100.0 * diff:+5.2f}%"
             )
 
             if time_mlx >= 2.0 * time_torch:
