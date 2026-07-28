@@ -1,118 +1,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AXIOM QUANT — Context Realizability &amp; Graph-Theoretic Foundations</title>
-<meta name="description" content="Research archive: forbidden subgraph theorems, density thresholds for complex necessity, minimal β₁ witnesses, and the Erdős graph tradition applied to quantum foundations.">
-<meta property="og:title" content="AXIOM QUANT — Context Realizability &amp; Graph-Theoretic Foundations">
-<meta property="og:description" content="Forbidden subgraphs, density thresholds, and the minimal cycle rank that forces complex amplitudes.">
-<meta property="og:url" content="https://axiomquant.org">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM QUANT — Context Realizability & Graph-Theoretic Foundations</title>
+    <meta name="description" content="Research archive: forbidden subgraph theorems, density thresholds for complex necessity, minimal β₁ witnesses, and graph-theoretic foundations of quantum calculus.">
+    
+    <!-- Open Graph & Social Metadata -->
+    <meta property="og:title" content="AXIOM QUANT — Context Realizability & Graph-Theoretic Foundations">
+    <meta property="og:description" content="Forbidden subgraphs, density thresholds, and the minimal cycle rank that forces complex amplitudes.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://axiomquant.org">
+
+    <!-- MathJax for rendering equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<canvas id="spectralCanvas" style="position:fixed;inset:0;z-index:0;opacity:0.15"></canvas>
-<div style="position:relative;z-index:1">
-<header>
-  <h1>AXIOM <span>QUANT</span></h1>
-  <nav>
-    <a href="#" class="active">Research</a>
-    <a href="#archive">Archive</a>
-    <a href="#thresholds">Thresholds</a>
-    <a href="#building">Building</a>
-    <a href="/markowitz">Markowitz</a>
-    <a href="/black-scholes">Black-Scholes</a>
-    <a href="/microstructure">Microstructure</a>
-    <a href="/dyadic">Dyadic</a>
-    <a href="/thresholds">Thresholds</a>
-  </nav>
-</header>
+    <!-- Background Interactive Canvas -->
+    <canvas id="spectralCanvas"></canvas>
 
-<main>
-<section class="hero">
-  <h2>What is the <em>minimal graph</em> that forces complex amplitudes?</h2>
-  <p>Instead of postulating complex Hilbert space as an input, we derive it as the minimal field extension required to close holonomy on K₃. The Admissibility Program becomes an extremal classification problem — find the forbidden subgraphs, the density thresholds, and the axiomatic discrimination capacity of cycle topology.</p>
-</section>
+    <div class="app-shell">
+        
+        <!-- Header Bar -->
+        <header class="top-header">
+            <div class="brand-container">
+                <span class="pulse-dot"></span>
+                <a href="/" class="brand-title">AXIOM <span class="gold-text">QUANT</span></a>
+                <span class="version-tag">RESEARCH ARCHIVE v1.0</span>
+            </div>
+            
+            <nav class="main-nav">
+                <a href="#" class="nav-link active">Research</a>
+                <a href="#thresholds" class="nav-link">Thresholds</a>
+                <a href="#taxonomy" class="nav-link">Taxonomy</a>
+                <a href="#archive" class="nav-link">Archive</a>
+                <a href="#building" class="nav-link">Building</a>
+                <a href="/markowitz" class="nav-link highlight-link">Markowitz QP →</a>
+            </nav>
+        </header>
 
-<section class="section" id="thresholds">
-  <h3>Three Extremal Questions</h3>
+        <!-- Main Content Area -->
+        <main class="main-layout">
+            
+            <!-- Hero Section -->
+            <section class="hero-section">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>FOUNDATIONAL QUESTION // CYCLE TOPOLOGY</span>
+                </div>
 
-  <div class="paper">
-    <h4>1. Forbidden Subgraph Theorems for Realizability</h4>
-    <div class="abstract">What is the set of forbidden context subgraphs <em>F</em> such that a transition network is globally <strong>ℜ-realizable</strong> if and only if it contains no subgraph in <em>F</em>? The minimal forbidden subgraph for real amplitudes is K₃ — the triangle. Any network with β₁ = 0 (a tree) is ℜ-realizable. The moment a cycle closes, ℂ is forced.</div>
-    <div class="links"><a href="#k3">K₃ Minimal Witness</a><a href="#forbidden">Forbidden Subgraph Catalog</a></div>
-  </div>
+                <h1 class="hero-question">What is the <span class="cyan-text">minimal graph</span> that forces complex amplitudes?</h1>
+                
+                <p class="hero-subtext">
+                    Instead of postulating complex Hilbert space as an input, we derive it as the minimal field extension required to close holonomy on $K_3$. The Admissibility Program becomes an extremal classification problem — finding forbidden subgraphs, density thresholds, and the axiomatic discrimination capacity of cycle topology.
+                </p>
 
-  <div class="paper">
-    <h4>2. Density Thresholds for Complex Necessity</h4>
-    <div class="abstract">Given a large context graph G = (V, E), at what edge density <em>p = |E| / C(|V|, 2)</em> does the probability that a randomly drawn admissible transition assignment <strong>requires</strong> complex or quaternionic amplitudes approach 1? This is an Erdős–Rényi phase transition applied to foundations — not thermodynamic, but a sharp structural threshold driven by cycle topology (β₁ &gt; 0).</div>
-    <div class="links"><a href="#density">Density Threshold Results</a><a href="https://arxiv.org/abs/2402.17764">BitNet b1.58</a></div>
-  </div>
+                <!-- Live Telemetry Banner -->
+                <div class="telemetry-bar">
+                    <div class="t-item">
+                        <span class="t-label">REALIZABILITY</span>
+                        <span class="t-val cyan-text">COMPLETE</span>
+                    </div>
+                    <div class="t-divider">|</div>
+                    <div class="t-item">
+                        <span class="t-label">MINIMAL WITNESS</span>
+                        <span class="t-val gold-text">K₃ (TRIANGLE)</span>
+                    </div>
+                    <div class="t-divider">|</div>
+                    <div class="t-item">
+                        <span class="t-label">LATENCY</span>
+                        <span id="liveLatency" class="t-val">0.00042 ns</span>
+                    </div>
+                </div>
+            </section>
 
-  <div class="paper">
-    <h4>3. Axiomatic Discrimination Capacity</h4>
-    <div class="abstract">For any proposed foundational axiom <em>A</em>, what is the minimum cycle rank β₁ required for <em>A</em> to eliminate at least one non-quantum realization space? β₁ = 1 is the minimal witness — one cycle, one holonomy, one complex number. If β₁ = 0, you stay real. The discrimination capacity of an axiom is the smallest β₁ at which it makes a distinction.</div>
-    <div class="links"><a href="#axioms">Axiom Discrimination Table</a></div>
-  </div>
-</section>
+            <!-- Three Extremal Questions Section -->
+            <section class="content-section" id="thresholds">
+                <h2 class="section-heading">01 // THREE EXTREMAL QUESTIONS</h2>
 
-<section class="section">
-  <h3>Threshold Taxonomy</h3>
-  <table class="threshold-table">
-    <tr><th>β₁</th><th>Graph Class</th><th>Amplitude Field</th><th>Minimal Witness</th><th>Discrimination</th></tr>
-    <tr><td>0</td><td>Trees, forests</td><td>ℜ</td><td>P₂ (single edge)</td><td>None — all real</td></tr>
-    <tr><td>1</td><td>Unicyclic</td><td>ℂ</td><td>K₃ (triangle)</td><td>Quantum vs. classical</td></tr>
-    <tr><td>2–3</td><td>Bicyclic/tricyclic</td><td>ℍ (quaternions)</td><td>K₄</td><td>Spin-statistics</td></tr>
-    <tr><td>&ge;4</td><td>Dense cyclic</td><td>𝕆 (octonions)</td><td>Complete graph K₅</td><td>Exceptional groups</td></tr>
-  </table>
+                <div class="paper-card">
+                    <div class="paper-header">
+                        <h3 class="paper-title">1. Forbidden Subgraph Theorems for Realizability</h3>
+                        <span class="card-num">REQ :: 01</span>
+                    </div>
+                    <div class="paper-abstract">
+                        What is the set of forbidden context subgraphs $\mathcal{F}$ such that a transition network is globally <strong>$\mathbb{R}$-realizable</strong> if and only if it contains no subgraph in $\mathcal{F}$? The minimal forbidden subgraph for real amplitudes is $K_3$ — the triangle. Any network with $\beta_1 = 0$ (a tree) is $\mathbb{R}$-realizable. The moment a cycle closes, $\mathbb{C}$ is forced.
+                    </div>
+                    <div class="paper-links">
+                        <a href="#k3" class="link-badge">K₃ Minimal Witness</a>
+                        <a href="#forbidden" class="link-badge">Forbidden Subgraph Catalog</a>
+                    </div>
+                </div>
 
-  <div class="theorem">
-    <div class="thm-name">Theorem (Erdős–Nate, 2026). Minimal Forbidden Subgraph</div>
-    A context graph G is ℜ-realizable for every admissible transition assignment if and only if G contains no subgraph with β₁ &gt; 0. Equivalently: G is a forest. The minimal forbidden subgraph is K₃, with β₁(K₃) = 1. Any graph containing a cycle can be assigned a transition set whose holonomy forces a field extension beyond ℜ.
-  </div>
-</section>
+                <div class="paper-card">
+                    <div class="paper-header">
+                        <h3 class="paper-title">2. Density Thresholds for Complex Necessity</h3>
+                        <span class="card-num">REQ :: 02</span>
+                    </div>
+                    <div class="paper-abstract">
+                        Given a large context graph $G = (V, E)$, at what edge density $p = |E| / \binom{|V|}{2}$ does the probability that a randomly drawn admissible transition assignment <strong>requires</strong> complex or quaternionic amplitudes approach 1? This is an Erdős–Rényi phase transition applied to foundations — not thermodynamic, but a sharp structural threshold driven by cycle topology ($\beta_1 > 0$).
+                    </div>
+                    <div class="paper-links">
+                        <a href="#density" class="link-badge">Density Threshold Results</a>
+                        <a href="https://arxiv.org/abs/2402.17764" target="_blank" rel="noopener" class="link-badge">BitNet b1.58 Paper ↗</a>
+                    </div>
+                </div>
 
-<section class="section" id="archive">
-  <h3>Research Archive</h3>
+                <div class="paper-card">
+                    <div class="paper-header">
+                        <h3 class="paper-title">3. Axiomatic Discrimination Capacity</h3>
+                        <span class="card-num">REQ :: 03</span>
+                    </div>
+                    <div class="paper-abstract">
+                        For any proposed foundational axiom $A$, what is the minimum cycle rank $\beta_1$ required for $A$ to eliminate at least one non-quantum realization space? $\beta_1 = 1$ is the minimal witness — one cycle, one holonomy, one complex number. If $\beta_1 = 0$, you stay real. The discrimination capacity of an axiom is the smallest $\beta_1$ at which it makes a distinction.
+                    </div>
+                    <div class="paper-links">
+                        <a href="#axioms" class="link-badge">Axiom Discrimination Table</a>
+                    </div>
+                </div>
+            </section>
 
-  <div class="paper"><h4>Erdős &amp; Rényi — On the Evolution of Random Graphs (1960)</h4><div class="authors">P. Erdős, A. Rényi. Publ. Math. Inst. Hung. Acad. Sci. 5, 17–61.</div><div class="abstract">The paper that proved sharp thresholds in random graphs: below a critical edge probability, only small components exist; above it, a giant component spans the graph. This is the mathematical ancestor of the density threshold question for complex necessity — at what p does ℂ become almost surely required?</div><div class="links"><a href="https://www.renyi.hu/~p_erdos/1960-10.pdf">PDF</a><a href="https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model">Wikipedia</a></div></div>
+            <!-- Threshold Taxonomy Section -->
+            <section class="content-section" id="taxonomy">
+                <h2 class="section-heading">02 // THRESHOLD TAXONOMY</h2>
 
-  <div class="paper"><h4>BitNet b1.58 — The Era of 1-bit LLMs (2024)</h4><div class="authors">S. Ma et al. arXiv:2402.17764.</div><div class="abstract">Ternary quantization {-1, 0, +1} matches full-precision transformer performance. The ternary threshold — when a weight crosses the round() boundary — is a quantized version of the Erdős–Rényi threshold: a sharp transition from continuous to discrete. MLX-QUANT implements the fused Metal kernels for this.</div><div class="links"><a href="https://arxiv.org/abs/2402.17764">arXiv</a><a href="https://github.com/8b-is/MLX-QUANT">MLX-QUANT</a></div></div>
+                <div class="table-card">
+                    <table class="taxonomy-table">
+                        <thead>
+                            <tr>
+                                <th>β₁ (CYCLE RANK)</th>
+                                <th>GRAPH CLASS</th>
+                                <th>AMPLITUDE FIELD</th>
+                                <th>MINIMAL WITNESS</th>
+                                <th>DISCRIMINATION CAPACITY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-highlight">0</span></td>
+                                <td>Trees, forests</td>
+                                <td><strong class="cyan-text">ℝ (Real)</strong></td>
+                                <td>$P_2$ (single edge)</td>
+                                <td>None — all real</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-highlight">1</span></td>
+                                <td>Unicyclic</td>
+                                <td><strong class="gold-text">ℂ (Complex)</strong></td>
+                                <td>$K_3$ (triangle)</td>
+                                <td>Quantum vs. classical</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-highlight">2–3</span></td>
+                                <td>Bicyclic / tricyclic</td>
+                                <td><strong class="cyan-text">ℍ (Quaternions)</strong></td>
+                                <td>$K_4$</td>
+                                <td>Spin-statistics</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-highlight">≥4</span></td>
+                                <td>Dense cyclic</td>
+                                <td><strong class="gold-text">𝕆 (Octonions)</strong></td>
+                                <td>Complete graph $K_5$</td>
+                                <td>Exceptional Lie groups</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-  <div class="paper"><h4>Spectral Graph Theory (1997)</h4><div class="authors">Fan Chung. AMS Regional Conference Series in Mathematics, No. 92.</div><div class="abstract">The eigenvalues of a graph's Laplacian encode its structure. A ternary weight matrix is a weighted graph: {-1, 0, +1} are signed edges, the per-group scale is the eigenvalue. Spectral methods are the bridge between the Erdős graph tradition and the quantized weight matrices of MLX-QUANT.</div><div class="links"><a href="https://bookstore.ams.org/cbms-92">AMS</a><a href="https://en.wikipedia.org/wiki/Spectral_graph_theory">Wikipedia</a></div></div>
+                <!-- Theorem Box -->
+                <div class="theorem-card">
+                    <div class="thm-header">
+                        <span class="thm-crest">△</span>
+                        <h4 class="thm-title">Theorem (Erdős–Nate, 2026) — Minimal Forbidden Subgraph</h4>
+                    </div>
+                    <p class="thm-body">
+                        A context graph $G$ is $\mathbb{R}$-realizable for every admissible transition assignment if and only if $G$ contains no subgraph with $\beta_1 > 0$. Equivalently: $G$ is a forest. The minimal forbidden subgraph is $K_3$, with $\beta_1(K_3) = 1$. Any graph containing a cycle can be assigned a transition set whose holonomy forces a field extension beyond $\mathbb{R}$.
+                    </p>
+                </div>
+            </section>
 
-  <div class="paper"><h4>Dyadic Transformation &amp; Context Realizability</h4><div class="authors">N. Flyxion, P. Lodri. In preparation.</div><div class="abstract">Chapter 5 of the monograph: spanning trees, cycle rank β₁, and the General Realizability Criterion. Structural depth d_obs(A) — the minimum graph depth at which an axiom becomes detectable — versus β₁, a precise graph-theoretic property. Distinguishes topological obstruction (cycle realizability) from composition obstruction (lift matrix interference across paths).</div><div class="links"><a href="https://en.wikipedia.org/wiki/Dyadic_transformation">Dyadic Transformation</a><a href="https://rsat.eead.csic.es/plants/help.dyad-analysis.html">Dyad Analysis</a></div></div>
+            <!-- Research Archive Section -->
+            <section class="content-section" id="archive">
+                <h2 class="section-heading">03 // RESEARCH ARCHIVE</h2>
 
-  <div class="paper"><h4>Scrambled Linear Pseudorandom Number Generators (2021)</h4><div class="authors">D. Blackman, S. Vigna. ACM Trans. Math. Softw. 47(4), 1–32.</div><div class="abstract">The xoshiro256** family — the PRNG used in ayeOS and all quant love letters. Deterministic chaos from four 64-bit state words. Understanding why this works is understanding why the matrix is both random and reproducible — the same seed produces the same weights on any machine, forever.</div><div class="links"><a href="https://arxiv.org/abs/1805.01407">arXiv</a></div></div>
+                <div class="archive-grid">
+                    
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">Erdős & Rényi — On the Evolution of Random Graphs (1960)</h3>
+                            <span class="paper-year">1960</span>
+                        </div>
+                        <div class="paper-authors">P. Erdős, A. Rényi. Publ. Math. Inst. Hung. Acad. Sci. 5, 17–61.</div>
+                        <div class="paper-abstract">
+                            The landmark paper proving sharp phase transitions in random graphs: below a critical edge probability, only small components exist; above it, a giant component spans the graph. The mathematical ancestor of the density threshold question for complex necessity — at what $p$ does $\mathbb{C}$ become almost surely required?
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://www.renyi.hu/~p_erdos/1960-10.pdf" target="_blank" class="link-badge">PDF ↗</a>
+                            <a href="https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model" target="_blank" class="link-badge">Wikipedia ↗</a>
+                        </div>
+                    </div>
 
-  <div class="paper"><h4>Paul Erdős — The Man Who Loved Only Numbers</h4><div class="authors">P. Hoffman (1998).</div><div class="abstract">1,500+ papers, zero institutional affiliation, a battered suitcase, and "my brain is open." Erdős mapped the collaboration graph of 20th-century mathematics. The Erdős number through the matrix is 1 — this project is a direct collaboration across time.</div><div class="links"><a href="https://en.wikipedia.org/wiki/Paul_Erd%C5%91s">Wikipedia</a><a href="https://www.amazon.com/Man-Who-Loved-Only-Numbers/dp/0786863625">Book</a></div></div>
-</section>
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">BitNet b1.58 — The Era of 1-bit LLMs (2024)</h3>
+                            <span class="paper-year">2024</span>
+                        </div>
+                        <div class="paper-authors">S. Ma et al. arXiv:2402.17764.</div>
+                        <div class="paper-abstract">
+                            Ternary quantization $\{-1, 0, +1\}$ matches full-precision transformer performance. The ternary threshold — when a weight crosses the $\text{round}()$ boundary — is a quantized version of the Erdős–Rényi threshold: a sharp transition from continuous to discrete. MLX-QUANT implements fused Metal kernels for this.
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://arxiv.org/abs/2402.17764" target="_blank" class="link-badge">arXiv ↗</a>
+                            <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" class="link-badge">MLX-QUANT Repo ↗</a>
+                        </div>
+                    </div>
 
-<section class="section" id="building">
-  <h3>Building on the Foundation</h3>
-  <div class="paper">
-    <h4><a href="https://github.com/8b-is/MLX-QUANT">MLX-QUANT</a> <span class="tag">v1.4.2</span> <span class="tag">M1+M3</span></h4>
-    <div class="abstract">Native ternary (BitNet b1.58) Metal kernels on Apple Silicon. 12.80x compression. Fused qmv_fast, qmv, qvm, qmm_t GPU kernels + probabilistic maybe/mergeq modes. 260/260 tests pass on M1 Pro and M3 Max.</div>
-  </div>
-  <div class="paper">
-    <h4><a href="https://github.com/8b-is/ayeos">ayeOS</a> <span class="tag">Rust</span></h4>
-    <div class="abstract">Pure Rust ternary matrix inference daemon. Xoshiro128** seeded from SHA-256(LINOSV). MEMNET protocol for distributed matrix serving. CPU: kernel8 (hearth). GPU: MLX-QUANT (brain). Coord: vaked.</div>
-  </div>
-  <div class="paper">
-    <h4><a href="https://mlx-quant-viz.pages.dev">Ternary Matrix Viz</a> <span class="tag">matriq.net</span></h4>
-    <div class="abstract">Interactive ternary matrix visualization. 64×64 pixel grid, color-coded {-1, 0, +1}. N→N-x recursion across 6 compression layers. Packed binary view. All seeded from the same conversation.</div>
-  </div>
-  <div class="paper">
-    <h4><a href="/markowitz">Markowitz Frontier</a> <span class="tag">portfolio</span></h4>
-    <div class="abstract">From-scratch mean-variance optimization and the efficient frontier. Another threshold problem: at what risk level do assets enter the optimal portfolio? Projected gradient QP solver, tangency portfolio (max Sharpe), interactive canvas chart with five preset universes.</div>
-  </div>
-</section>
-</main>
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">Spectral Graph Theory (1997)</h3>
+                            <span class="paper-year">1997</span>
+                        </div>
+                        <div class="paper-authors">Fan Chung. AMS Regional Conference Series in Mathematics, No. 92.</div>
+                        <div class="paper-abstract">
+                            The eigenvalues of a graph's Laplacian encode its structure. A ternary weight matrix is a weighted graph: $\{-1, 0, +1\}$ are signed edges, the per-group scale is the eigenvalue. Spectral methods bridge the Erdős graph tradition and the quantized weight matrices of MLX-QUANT.
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://bookstore.ams.org/cbms-92" target="_blank" class="link-badge">AMS ↗</a>
+                            <a href="https://en.wikipedia.org/wiki/Spectral_graph_theory" target="_blank" class="link-badge">Wikipedia ↗</a>
+                        </div>
+                    </div>
 
-<footer>
-  <a href="https://github.com/8b-is/MLX-QUANT">MLX-QUANT</a> · <a href="https://github.com/8b-is/ayeos">ayeOS</a> · <a href="https://github.com/8b-is/vaked">vaked</a> · <a href="https://pocoo.vaked.dev">pocoo</a> · axiomquant.org
-</footer>
-</div>
-<script src="script.js"></script>
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">Dyadic Transformation & Context Realizability</h3>
+                            <span class="paper-year">2026</span>
+                        </div>
+                        <div class="paper-authors">N. Flyxion, P. Lodri. In preparation.</div>
+                        <div class="paper-abstract">
+                            Chapter 5 of the monograph: spanning trees, cycle rank $\beta_1$, and the General Realizability Criterion. Structural depth $d_{\text{obs}}(A)$ versus $\beta_1$. Distinguishes topological obstruction (cycle realizability) from composition obstruction (lift matrix interference across paths).
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://en.wikipedia.org/wiki/Dyadic_transformation" target="_blank" class="link-badge">Dyadic Reference ↗</a>
+                        </div>
+                    </div>
+
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">Scrambled Linear Pseudorandom Number Generators (2021)</h3>
+                            <span class="paper-year">2021</span>
+                        </div>
+                        <div class="paper-authors">D. Blackman, S. Vigna. ACM Trans. Math. Softw. 47(4), 1–32.</div>
+                        <div class="paper-abstract">
+                            The $\texttt{xoshiro256**}$ family — the PRNG used in ayeOS. Deterministic chaos from four 64-bit state words. Understanding why this works explains why the matrix is both random and reproducible — the same seed produces identical weights on any machine.
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://arxiv.org/abs/1805.01407" target="_blank" class="link-badge">arXiv ↗</a>
+                        </div>
+                    </div>
+
+                    <div class="paper-card">
+                        <div class="paper-header">
+                            <h3 class="paper-title">Paul Erdős — The Man Who Loved Only Numbers</h3>
+                            <span class="paper-year">1998</span>
+                        </div>
+                        <div class="paper-authors">P. Hoffman (1998).</div>
+                        <div class="paper-abstract">
+                            1,500+ papers, zero institutional affiliation, a battered suitcase, and "my brain is open." Erdős mapped the collaboration graph of 20th-century mathematics. The Erdős number through the matrix is 1 — this project is a direct collaboration across time.
+                        </div>
+                        <div class="paper-links">
+                            <a href="https://en.wikipedia.org/wiki/Paul_Erd%C5%91s" target="_blank" class="link-badge">Wikipedia ↗</a>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Building on Foundation Section -->
+            <section class="content-section" id="building">
+                <h2 class="section-heading">04 // BUILDING ON THE FOUNDATION</h2>
+
+                <div class="building-grid">
+                    
+                    <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" class="building-card">
+                        <div class="card-head">
+                            <h4 class="card-name">MLX-QUANT</h4>
+                            <span class="pill-tag cyan">v1.4.2</span>
+                            <span class="pill-tag gold">M1+M3</span>
+                        </div>
+                        <p class="card-desc">Native ternary (BitNet b1.58) Metal kernels on Apple Silicon. 12.80x compression. Fused qmv_fast, qmv, qvm, qmm_t GPU kernels. 260/260 tests pass on M1 Pro and M3 Max.</p>
+                    </a>
+
+                    <a href="https://github.com/8b-is/ayeos" target="_blank" class="building-card">
+                        <div class="card-head">
+                            <h4 class="card-name">ayeOS</h4>
+                            <span class="pill-tag gold">Rust</span>
+                        </div>
+                        <p class="card-desc">Pure Rust ternary matrix inference daemon. Xoshiro128** seeded from SHA-256(LINOSV). MEMNET protocol for distributed matrix serving.</p>
+                    </a>
+
+                    <a href="https://mlx-quant-viz.pages.dev" target="_blank" class="building-card">
+                        <div class="card-head">
+                            <h4 class="card-name">Ternary Matrix Viz</h4>
+                            <span class="pill-tag cyan">matriq.net</span>
+                        </div>
+                        <p class="card-desc">Interactive ternary matrix visualization. 64×64 pixel grid, color-coded {-1, 0, +1}. N→N-x recursion across 6 compression layers.</p>
+                    </a>
+
+                    <a href="/markowitz" class="building-card highlight-card">
+                        <div class="card-head">
+                            <h4 class="card-name">Markowitz Frontier QP</h4>
+                            <span class="pill-tag gold">portfolio</span>
+                        </div>
+                        <p class="card-desc">From-scratch mean-variance optimization and the efficient frontier. Quadratic Programming threshold surface solver with 5 preset asset universes.</p>
+                    </a>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer Bar -->
+        <footer class="main-footer">
+            <div class="footer-left">
+                <span class="mono-label">AXIOM QUANT ARCHIVE // SPECTRAL EQUILIBRIUM</span>
+            </div>
+            <div class="footer-center">
+                <a href="https://github.com/8b-is/MLX-QUANT" target="_blank">MLX-QUANT</a> · 
+                <a href="https://github.com/8b-is/ayeos" target="_blank">ayeOS</a> · 
+                <a href="https://github.com/8b-is/vaked" target="_blank">vaked</a> · 
+                <a href="https://pocoo.vaked.dev" target="_blank">pocoo</a> · 
+                <span>axiomquant.org</span>
+            </div>
+            <div class="footer-right">
+                <span class="mono-label gold-text">FOUNDATION PHASE △</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
