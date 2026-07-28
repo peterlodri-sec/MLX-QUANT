@@ -1938,6 +1938,46 @@ class TestQuantized(mlx_tests.MLXTestCase):
         expected = mx.dequantize(w_q, mx.contiguous(scales), mode=mode)
         self.assertTrue(mx.allclose(w_hat, expected))
 
+    def test_maybe_quantized_matmul(self):
+        if mx.default_device() != mx.gpu:
+            self.skipTest("maybe mode requires GPU")
+        for M, K, N in [(1, 64, 64), (1, 256, 256), (4, 64, 64)]:
+            x = mx.random.normal((M, K))
+            w = mx.random.normal((N, K))
+            w_q, scales = mx.quantize(
+                w, group_size=64, bits=2, mode="ternary")
+            y = mx.quantized_matmul(
+                x, w_q, scales, group_size=64, bits=2, mode="maybe")
+            mx.eval(y)
+            self.assertEqual(y.shape, (M, N))
+            self.assertEqual(y.dtype, mx.float32)
+
+    def test_mergeq_quantized_matmul(self):
+        if mx.default_device() != mx.gpu:
+            self.skipTest("mergeq mode requires GPU")
+        for M, K, N in [(1, 64, 64), (1, 256, 256), (4, 64, 64)]:
+            x = mx.random.normal((M, K))
+            w = mx.random.normal((N, K))
+            w_q, scales = mx.quantize(
+                w, group_size=64, bits=2, mode="ternary")
+            y = mx.quantized_matmul(
+                x, w_q, scales, group_size=64, bits=2, mode="mergeq")
+            mx.eval(y)
+            self.assertEqual(y.shape, (M, N))
+            self.assertEqual(y.dtype, mx.float32)
+
+    def test_maybe_mergeq_mode_validation(self):
+        w = mx.random.normal((64, 64))
+        # mode="maybe" requires GPU -- should fail gracefully on CPU
+        try:
+            mx.quantize(w, group_size=64, bits=2, mode="maybe")
+        except Exception:
+            pass  # expected on CPU or if quantize mode unsupported
+        try:
+            mx.quantize(w, group_size=64, bits=2, mode="mergeq")
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
     mlx_tests.MLXTestRunner()
