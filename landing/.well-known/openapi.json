@@ -1,0 +1,665 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AXIOM QUANT \u2014 GCP ADK & Google Quantum AI Engine",
+    "description": "Educational Quantitative API powered by GCP Agent Development Kit (ADK), Google Quantum AI Cirq, Python 3.13 JIT, and GIL-less free-threading.",
+    "version": "2.2.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Read Root",
+        "operationId": "read_root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Read Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contribution/submit": {
+      "post": {
+        "tags": [
+          "Honest Contribution"
+        ],
+        "summary": "Submit Contribution",
+        "description": "Submit a cryptographically signed honest research contribution.",
+        "operationId": "submit_contribution_api_v1_contribution_submit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contribution/list": {
+      "get": {
+        "tags": [
+          "Honest Contribution"
+        ],
+        "summary": "List Contributions",
+        "description": "List vaulted honest contributions.",
+        "operationId": "list_contributions_api_v1_contribution_list_get",
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional tag filter",
+              "title": "Tag"
+            },
+            "description": "Optional tag filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContributionHeader"
+                  },
+                  "title": "Response List Contributions Api V1 Contribution List Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contribution/verify/{contribution_id}": {
+      "get": {
+        "tags": [
+          "Honest Contribution"
+        ],
+        "summary": "Verify Contribution",
+        "description": "Cryptographically verify contribution honesty & SHA-256 payload integrity.",
+        "operationId": "verify_contribution_api_v1_contribution_verify__contribution_id__get",
+        "parameters": [
+          {
+            "name": "contribution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Contribution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Api V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/quantum/sycamore": {
+      "get": {
+        "summary": "Run Quantum Sycamore",
+        "description": "Executes a Google Quantum AI Cirq circuit simulation for Sycamore architecture.",
+        "operationId": "run_quantum_sycamore_api_v1_quantum_sycamore_get",
+        "parameters": [
+          {
+            "name": "qubits",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 3,
+              "title": "Qubits"
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 4,
+              "title": "Depth"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Quantum Sycamore Api V1 Quantum Sycamore Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adk/agent": {
+      "get": {
+        "summary": "Run Adk Agent",
+        "description": "Executes the GCP ADK multi-agent quantitative reasoning pipeline.",
+        "operationId": "run_adk_agent_api_v1_adk_agent_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "What is the minimal graph that forces complex amplitudes?",
+              "title": "Query"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Adk Agent Api V1 Adk Agent Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/black-scholes": {
+      "get": {
+        "summary": "Black Scholes",
+        "description": "Computes exact European call pricing and analytical Greeks using Python 3.13 JIT path.",
+        "operationId": "black_scholes_api_v1_black_scholes_get",
+        "parameters": [
+          {
+            "name": "S",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 100.0,
+              "title": "S"
+            }
+          },
+          {
+            "name": "K",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 105.0,
+              "title": "K"
+            }
+          },
+          {
+            "name": "T",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.5,
+              "title": "T"
+            }
+          },
+          {
+            "name": "r",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.05,
+              "title": "R"
+            }
+          },
+          {
+            "name": "vol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.2,
+              "title": "Vol"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Black Scholes Api V1 Black Scholes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markowitz": {
+      "get": {
+        "summary": "Markowitz Solve",
+        "description": "Computes Minimum Variance & Tangency weights using Python 3.13 Structural Pattern Matching.",
+        "operationId": "markowitz_solve_api_v1_markowitz_get",
+        "parameters": [
+          {
+            "name": "universe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "BigTech",
+              "title": "Universe"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Markowitz Solve Api V1 Markowitz Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ContributionHeader": {
+        "properties": {
+          "contribution_id": {
+            "type": "string",
+            "title": "Contribution Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "author_handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Handle"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "sha256_hash": {
+            "type": "string",
+            "title": "Sha256 Hash"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contribution_id",
+          "title",
+          "author",
+          "author_handle",
+          "tags",
+          "sha256_hash",
+          "timestamp"
+        ],
+        "title": "ContributionHeader"
+      },
+      "ContributionReceipt": {
+        "properties": {
+          "contribution_id": {
+            "type": "string",
+            "title": "Contribution Id",
+            "example": "contrib-7f9a2b10"
+          },
+          "sha256_hash": {
+            "type": "string",
+            "title": "Sha256 Hash",
+            "example": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "example": "2026-07-28T13:07:00Z"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "example": "VAULTED_GCP_STORAGE"
+          },
+          "storage_type": {
+            "type": "string",
+            "title": "Storage Type",
+            "example": "GCP_CLOUD_STORAGE / RAM_BUFFER"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contribution_id",
+          "sha256_hash",
+          "timestamp",
+          "status",
+          "storage_type"
+        ],
+        "title": "ContributionReceipt"
+      },
+      "ContributionSubmission": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Title of the research paper or monograph",
+            "example": "Spectral Rigidity in Quantum Chaos"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author",
+            "description": "Author full name or research group",
+            "example": "N. Flyxion & P. Lodri"
+          },
+          "author_handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Handle",
+            "description": "GitHub or Standard Galactic handle",
+            "example": "@standardgalactic"
+          },
+          "content_markdown": {
+            "type": "string",
+            "title": "Content Markdown",
+            "description": "LaTeX / Markdown research paper content"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Categorical tags",
+            "example": [
+              "quantum-chaos",
+              "random-matrices"
+            ]
+          },
+          "signature_ed25519": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Ed25519",
+            "description": "Optional Hex Ed25519 signature over SHA-256 payload"
+          },
+          "ephemeral_ram_only": {
+            "type": "boolean",
+            "title": "Ephemeral Ram Only",
+            "description": "If true, keep in RAM buffer without writing persistent storage",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "author",
+          "content_markdown"
+        ],
+        "title": "ContributionSubmission"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerificationResult": {
+        "properties": {
+          "contribution_id": {
+            "type": "string",
+            "title": "Contribution Id"
+          },
+          "hash_valid": {
+            "type": "boolean",
+            "title": "Hash Valid"
+          },
+          "signature_valid": {
+            "type": "boolean",
+            "title": "Signature Valid"
+          },
+          "signature_algorithm": {
+            "type": "string",
+            "title": "Signature Algorithm"
+          },
+          "honesty_score": {
+            "type": "number",
+            "title": "Honesty Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contribution_id",
+          "hash_valid",
+          "signature_valid",
+          "signature_algorithm",
+          "honesty_score"
+        ],
+        "title": "VerificationResult"
+      }
+    }
+  }
+}

@@ -43,12 +43,20 @@ def read_root() -> dict:
         "endpoints": [
             "/api/v1/quantum/sycamore",
             "/api/v1/adk/agent",
+            "/api/v1/contribution/submit",
+            "/api/v1/contribution/list",
+            "/api/v1/contribution/verify/{id}",
             "/api/v1/markowitz",
             "/api/v1/black-scholes",
             "/api/v1/microstructure",
             "/api/v1/health",
         ],
     }
+
+
+from honest_contribution import router as honest_contribution_router
+
+app.include_router(honest_contribution_router)
 
 
 @app.get("/api/v1/health")

@@ -98,6 +98,8 @@ function loadPaper(paperId) {
           'MONOGRAPH // VAULT // STANDARD GALACTIC KB',
       'google-pqc-standards' :
           'SECURITY // GOOGLE PQC STANDARDS & NIST FIPS 203/204/205',
+      'media-quines-appendices' :
+          'MONOGRAPH // APPENDICES // A-G & BIBLIOGRAPHY',
       'bibliography' : 'CATALOG // FOUNDATIONAL BIBLIOGRAPHY'
     };
     breadcrumb.innerText = titles[paperId] || 'MONOGRAPH // RESEARCH';
