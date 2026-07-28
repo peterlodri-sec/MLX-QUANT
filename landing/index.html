@@ -3,16 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXIOM QUANT — Context Realizability & Graph-Theoretic Foundations</title>
-    <meta name="description" content="Research archive: forbidden subgraph theorems, density thresholds for complex necessity, minimal β₁ witnesses, and graph-theoretic foundations of quantum calculus.">
-    
-    <!-- Open Graph & Social Metadata -->
-    <meta property="og:title" content="AXIOM QUANT — Context Realizability & Graph-Theoretic Foundations">
-    <meta property="og:description" content="Forbidden subgraphs, density thresholds, and the minimal cycle rank that forces complex amplitudes.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://axiomquant.org">
+    <title>AXIOM QUANT — Research Portal, Backyard Ultra Loop Engineering & GCP ADK</title>
+    <meta name="description" content="Axiom Quant Research Portal: Backyard Ultra Loop Engineering, LLMs, Agents, Coding Agents, Skills, MCPs, Python 3.13 JIT & GCP ADK multi-agent calculus.">
+    <meta name="keywords" content="quantitative finance, Backyard Ultra, Loop Engineering, Coding Agents, Skills, MCP, Model Context Protocol, LLMs, GCP ADK, Python 3.13 JIT, free-threaded Python, nogil, GCP Cloud Run, Google Cloud, graph theory, Markowitz QP, Black-Scholes">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://axiomquant.org/">
 
-    <!-- MathJax 3 Configuration -->
+    <!-- Open Graph / Facebook / LinkedIn Metadata -->
+    <meta property="og:site_name" content="AXIOM QUANT">
+    <meta property="og:title" content="AXIOM QUANT — Backyard Ultra Loop Engineering & GCP ADK">
+    <meta property="og:description" content="Backyard Ultra course into LLMs, agents, coding agents, skills, MCPs, loops and loop engineering.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://axiomquant.org/">
+    <meta property="og:image" content="https://axiomquant.org/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="AXIOM QUANT Research Portal & Monograph">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@axiomquant">
+    <meta name="twitter:title" content="AXIOM QUANT — Backyard Ultra Loop Engineering & GCP ADK">
+    <meta name="twitter:description" content="Endurance loop engineering, LLMs, skills, MCPs, and self-correcting agentic laps.">
+    <meta name="twitter:image" content="https://axiomquant.org/og-image.png">
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ResearchProject",
+      "name": "AXIOM QUANT",
+      "url": "https://axiomquant.org/",
+      "logo": "https://axiomquant.org/og-image.png",
+      "description": "Graph-theoretic foundations of quantum calculus, Erdős phase transitions, BitNet b1.58 ternary quantization, Markowitz QP solvers, and Backyard Ultra Loop Engineering.",
+      "sameAs": [
+        "https://github.com/peterlodri-sec/axiomquant.org",
+        "https://github.com/8b-is/MLX-QUANT",
+        "https://github.com/8b-is/ayeos"
+      ]
+    }
+    </script>
+
+    <!-- MathJax 3.2.2 Configuration -->
     <script>
         window.MathJax = {
             tex: {
@@ -25,285 +57,622 @@
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter & Fira Code & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.6.0">
+
+    <!-- Critical Inline Stylesheet Fallback -->
+    <style>
+        :root {
+            --bg-dark: #07090E;
+            --sidebar-bg: #0B0E17;
+            --content-bg: #0F1420;
+            --card-bg: #141A29;
+            --border-color: rgba(51, 65, 85, 0.45);
+            --cyan: #00F0FF;
+            --gold: #E5B958;
+            --white: #FFFFFF;
+            --slate: #E2E8F0;
+            --muted: #94A3B8;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'Fira Code', 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; min-height: 100vh; background-color: var(--bg-dark); color: var(--slate); font-family: var(--font-sans); line-height: 1.8; -webkit-font-smoothing: antialiased; }
+        
+        .portal-layout { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+        .portal-sidebar { background: var(--sidebar-bg); border-right: 1px solid var(--border-color); padding: 24px 20px; display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; overflow-y: auto; }
+        
+        .sidebar-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .pulse-indicator { width: 8px; height: 8px; border-radius: 50%; background-color: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .brand-title { font-family: var(--font-mono); font-size: 16px; font-weight: 800; letter-spacing: 0.2em; color: var(--white); text-decoration: none; }
+        .brand-title .gold { color: var(--gold); }
+        .sidebar-subtitle { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 12px; }
+        
+        .gcp-badge { font-family: var(--font-mono); font-size: 9px; color: #4285F4; background: rgba(66, 133, 244, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); border-radius: 4px; padding: 5px 8px; margin-bottom: 6px; text-align: center; }
+        .adk-badge { font-family: var(--font-mono); font-size: 9px; color: var(--gold); background: rgba(229, 185, 88, 0.15); border: 1px solid rgba(229, 185, 88, 0.4); border-radius: 4px; padding: 5px 8px; margin-bottom: 6px; text-align: center; }
+        .python-badge { font-family: var(--font-mono); font-size: 9px; color: #3776AB; background: rgba(55, 118, 171, 0.15); border: 1px solid rgba(55, 118, 171, 0.4); border-radius: 4px; padding: 5px 8px; margin-bottom: 16px; text-align: center; }
+        
+        .search-box { margin-bottom: 20px; }
+        .search-box input { width: 100%; background: #04060A; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 12px; color: var(--white); font-family: var(--font-mono); font-size: 11px; outline: none; }
+        .search-box input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+        
+        .sidebar-section { margin-bottom: 22px; }
+        .section-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 10px; }
+        
+        .solvers-link { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--cyan); text-decoration: none; padding: 8px 12px; border-radius: 4px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); margin-bottom: 8px; transition: all 0.2s ease; }
+        .solvers-link:hover { background: var(--cyan); color: #000; font-weight: 600; }
+        .gold-link { color: var(--gold) !important; background: rgba(229, 185, 88, 0.12) !important; border-color: rgba(229, 185, 88, 0.4) !important; }
+        .gold-link:hover { background: var(--gold) !important; color: #000 !important; }
+        
+        .paper-nav-list { list-style: none; }
+        .paper-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; border: 1px solid transparent; transition: all 0.2s ease; }
+        .paper-nav-item:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); }
+        .paper-nav-item.active { background: rgba(0, 240, 255, 0.12); border-color: var(--cyan); }
+        .paper-icon { font-size: 16px; }
+        .paper-info { display: flex; flex-direction: column; }
+        .p-title { font-size: 13.5px; font-weight: 600; color: var(--white); }
+        .p-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+        .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 10px; color: var(--gold); }
+        
+        .portal-content { background: var(--content-bg); padding: 36px 48px; overflow-y: auto; }
+        .content-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 36px; }
+        .header-breadcrumb { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; color: var(--cyan); }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .status-badge { font-family: var(--font-mono); font-size: 10px; color: var(--gold); padding: 4px 10px; background: rgba(229, 185, 88, 0.15); border: 1px solid rgba(229, 185, 88, 0.4); border-radius: 3px; }
+        .github-btn { font-family: var(--font-mono); font-size: 11px; color: var(--white); text-decoration: none; padding: 6px 14px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-color); border-radius: 4px; transition: all 0.2s ease; }
+        .github-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+        
+        .reader-surface { max-width: 840px; margin: 0 auto; }
+        .paper-content { display: none; }
+        .paper-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .meta-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; padding: 3px 8px; border-radius: 3px; }
+        .meta-tag.gold { background: rgba(229, 185, 88, 0.15); color: var(--gold); border: 1px solid rgba(229, 185, 88, 0.4); }
+        .meta-tag.cyan { background: rgba(0, 240, 255, 0.15); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.4); }
+        .meta-tag.gcp { background: rgba(66, 133, 244, 0.15); color: #4285F4; border: 1px solid rgba(66, 133, 244, 0.4); }
+        .meta-tag.py313 { background: rgba(55, 118, 171, 0.2); color: #3776AB; border: 1px solid rgba(55, 118, 171, 0.5); font-weight: 600; }
+        .meta-date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+        
+        .article-title { font-size: 32px; font-weight: 800; color: var(--white); line-height: 1.25; margin-bottom: 10px; }
+        .byline { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+        .lead-text { font-size: 17px; line-height: 1.85; color: var(--white); margin-bottom: 28px; }
+        
+        .section-title { font-size: 20px; font-weight: 700; color: var(--white); margin-top: 36px; margin-bottom: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); }
+        p { font-size: 15.5px; color: var(--slate); line-height: 1.85; margin-bottom: 18px; }
+        
+        mjx-container { color: var(--cyan) !important; font-size: 108% !important; }
+        .styled-list { margin-left: 20px; margin-bottom: 24px; }
+        .styled-list li { font-size: 15px; color: var(--slate); margin-bottom: 10px; }
+        .styled-list li strong { color: var(--white); }
+        
+        .code-block { background: #04060A; border: 1px solid var(--border-color); border-left: 4px solid var(--cyan); border-radius: 6px; padding: 18px 22px; margin-bottom: 24px; overflow-x: auto; }
+        .code-block pre code { font-family: var(--font-mono); font-size: 13px; color: var(--cyan); line-height: 1.6; }
+        
+        .table-wrapper { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; overflow-x: auto; margin-bottom: 28px; }
+        .concept-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 12px; }
+        .concept-table th { text-align: left; padding: 10px; color: var(--cyan); font-size: 10px; letter-spacing: 0.15em; border-bottom: 1px solid var(--border-color); }
+        .concept-table td { padding: 10px; border-bottom: 1px solid rgba(51, 65, 85, 0.4); color: var(--slate); }
+        
+        .cyan { color: var(--cyan); }
+        .gold { color: var(--gold); }
+        .lineage-tree { background: #04060A; border: 1px solid var(--border-color); border-left: 4px solid var(--gold); border-radius: 6px; padding: 18px 22px; margin-bottom: 28px; font-family: var(--font-mono); font-size: 12.5px; color: var(--gold); }
+        
+        @media (max-width: 900px) {
+            .portal-layout { grid-template-columns: 1fr; }
+            .portal-sidebar { height: auto; position: relative; }
+            .portal-content { padding: 24px 20px; }
+            .article-title { font-size: 24px; }
+        }
+    </style>
 </head>
 <body>
-    <!-- Background Cosmic Canvas -->
-    <canvas id="spectralCanvas"></canvas>
 
-    <!-- Outer Viewport Container -->
-    <div class="viewport-container">
+    <div class="portal-layout">
         
-        <!-- Floating Celestial Reading Planet Surface -->
-        <main class="reading-planet">
-            
-            <!-- Planet Header -->
-            <header class="planet-header">
-                <div class="brand-row">
-                    <span class="pulse-dot"></span>
-                    <a href="/" class="brand-name">AXIOM <span class="gold-text">QUANT</span></a>
-                    <span class="version-tag">RESEARCH ARCHIVE</span>
-                </div>
+        <!-- Sidebar Navigation & Paper Catalog -->
+        <aside class="portal-sidebar">
+            <div class="sidebar-brand">
+                <span class="pulse-indicator"></span>
+                <a href="/" class="brand-title">AXIOM <span class="gold">QUANT</span></a>
+            </div>
+            <div class="sidebar-subtitle">RESEARCH PORTAL v1.0</div>
 
-                <nav class="planet-nav">
-                    <a href="#" class="nav-item active">Research</a>
-                    <a href="#thresholds" class="nav-item">Thresholds</a>
-                    <a href="#taxonomy" class="nav-item">Taxonomy</a>
-                    <a href="#archive" class="nav-item">Archive</a>
-                    <a href="#building" class="nav-item">Building</a>
-                    <a href="/markowitz" class="nav-item highlight-btn">Markowitz QP →</a>
-                </nav>
+            <!-- GCP Cloud, ADK & Python 3.13 Alignment Badges -->
+            <div class="gcp-badge">☁️ GOOGLE CLOUD RUN // PROJECT: axiomquant</div>
+            <div class="adk-badge">🤖 GCP AGENT DEVELOPMENT KIT (ADK)</div>
+            <div class="python-badge">🐍 PYTHON 3.13 JIT + NOGIL (FREE-THREADED)</div>
+
+            <!-- Search & Filter Box -->
+            <div class="search-box">
+                <input type="text" id="paperSearch" placeholder="Search research & concepts..." oninput="filterPapers()" />
+            </div>
+
+            <!-- Interactive Solvers Quick Links -->
+            <div class="sidebar-section">
+                <div class="section-title">INTERACTIVE ENGINES</div>
+                <a href="/markowitz" class="solvers-link gold-link">⚡ Markowitz QP Solver →</a>
+                <a href="/black-scholes" class="solvers-link">📈 Black-Scholes Greeks →</a>
+                <a href="/microstructure" class="solvers-link">🌊 L2 Microstructure →</a>
+                <a href="/thresholds" class="solvers-link">🎲 ER Phase Transition →</a>
+            </div>
+
+            <!-- Monograph Papers List -->
+            <div class="sidebar-section">
+                <div class="section-title">MONOGRAPH PAPERS</div>
+                <ul class="paper-nav-list" id="paperList">
+                    <li class="paper-nav-item active" data-paper="concept-map" onclick="loadPaper('concept-map')">
+                        <span class="paper-icon">🗺️</span>
+                        <div class="paper-info">
+                            <span class="p-title">Concept Map</span>
+                            <span class="p-sub">Five Threshold Domains</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="backyard-ultra" onclick="loadPaper('backyard-ultra')">
+                        <span class="paper-icon">🏃‍♂️</span>
+                        <div class="paper-info">
+                            <span class="p-title">The Backyard Ultra</span>
+                            <span class="p-sub">Loop Engineering &amp; MCPs</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="ultramarathon" onclick="loadPaper('ultramarathon')">
+                        <span class="paper-icon">🏃</span>
+                        <div class="paper-info">
+                            <span class="p-title">The Ultramarathon</span>
+                            <span class="p-sub">Zeta, Wigner &amp; Ising</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="dyadic-ternary" onclick="loadPaper('dyadic-ternary')">
+                        <span class="paper-icon">📐</span>
+                        <div class="paper-info">
+                            <span class="p-title">Dyadic-Ternary Bridge</span>
+                            <span class="p-sub">β₁ Cycle Rank &amp; T(x)</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="microstructure-chaos" onclick="loadPaper('microstructure-chaos')">
+                        <span class="paper-icon">🌊</span>
+                        <div class="paper-info">
+                            <span class="p-title">Microstructure &amp; Chaos</span>
+                            <span class="p-sub">VPIN Toxicity &amp; Almgren</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="transfer-operator" onclick="loadPaper('transfer-operator')">
+                        <span class="paper-icon">🔄</span>
+                        <div class="paper-info">
+                            <span class="p-title">Transfer Operator</span>
+                            <span class="p-sub">Cantor &amp; Devil's Staircase</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="black-scholes" onclick="loadPaper('black-scholes')">
+                        <span class="paper-icon">📈</span>
+                        <div class="paper-info">
+                            <span class="p-title">Black-Scholes Greeks</span>
+                            <span class="p-sub">Stochastic Calculus</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="bibliography" onclick="loadPaper('bibliography')">
+                        <span class="paper-icon">📚</span>
+                        <div class="paper-info">
+                            <span class="p-title">Foundational Bibliography</span>
+                            <span class="p-sub">Complete Works Catalog</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Footer Meta -->
+            <div class="sidebar-footer">
+                <span>AXIOM QUANT ARCHIVE △</span>
+            </div>
+        </aside>
+
+        <!-- Main Reading Surface -->
+        <main class="portal-content">
+            
+            <!-- Top Telemetry Header -->
+            <header class="content-header">
+                <div class="header-breadcrumb" id="paperBreadcrumb">MONOGRAPH // 01 // CONCEPT MAP</div>
+                <div class="header-actions">
+                    <span class="status-badge">FOUNDATION PHASE △</span>
+                    <a href="https://github.com/peterlodri-sec/axiomquant.org" target="_blank" class="github-btn">GitHub ↗</a>
+                </div>
             </header>
 
-            <!-- Hero Reading Lead -->
-            <section class="planet-hero">
-                <div class="hero-tag">
-                    <span class="badge-dot"></span>
-                    <span>CYCLE TOPOLOGY & COMPLEX NECESSITY</span>
-                </div>
-
-                <h1 class="hero-title">What is the <span class="cyan-text">minimal graph</span> that forces complex amplitudes?</h1>
+            <!-- Active Article Body Container -->
+            <article class="reader-surface" id="readerSurface">
                 
-                <p class="hero-prose">
-                    Instead of postulating complex Hilbert space as an input, we derive it as the minimal field extension required to close holonomy on $K_3$. The Admissibility Program becomes an extremal classification problem — finding forbidden subgraphs, density thresholds, and the axiomatic discrimination capacity of cycle topology.
-                </p>
-
-                <div class="telemetry-pill">
-                    <span class="t-label">MINIMAL WITNESS:</span>
-                    <span class="gold-text">K₃ (TRIANGLE)</span>
-                    <span class="t-sep">•</span>
-                    <span class="t-label">LATENCY:</span>
-                    <span id="liveLatency" class="cyan-text">0.00042 ns</span>
-                </div>
-            </section>
-
-            <!-- Section 01: Three Extremal Questions -->
-            <section class="planet-section" id="thresholds">
-                <h2 class="section-label">01 // THREE EXTREMAL QUESTIONS</h2>
-
-                <article class="paper-entry">
-                    <div class="entry-head">
-                        <h3 class="entry-title">1. Forbidden Subgraph Theorems for Realizability</h3>
-                        <span class="entry-code">REQ :: 01</span>
+                <!-- PAPER 1: CONCEPT MAP (DEFAULT) -->
+                <div class="paper-content active" id="paper-concept-map">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">MONOGRAPH CHAPTER 01</span>
+                        <span class="meta-tag gcp">☁️ GCP CLOUD COMPUTING</span>
+                        <span class="meta-tag py313">🐍 PYTHON 3.13 JIT + NOGIL</span>
+                        <span class="meta-tag gold">🤖 GCP ADK AGENT</span>
+                        <span class="meta-date">JULY 2026</span>
                     </div>
-                    <p class="entry-body">
-                        What is the set of forbidden context subgraphs $\mathcal{F}$ such that a transition network is globally <strong>$\mathbb{R}$-realizable</strong> if and only if it contains no subgraph in $\mathcal{F}$? The minimal forbidden subgraph for real amplitudes is $K_3$ — the triangle. Any network with $\beta_1 = 0$ (a tree) is $\mathbb{R}$-realizable. The moment a cycle closes, $\mathbb{C}$ is forced.
+
+                    <h1 class="article-title">Concept Map: The Five Threshold Domains</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <p class="lead-text">
+                        All five research areas on <strong>axiomquant.org</strong> share the same underlying mathematical structure: a critical parameter controlling a phase transition in a complex system, executed via the <strong>GCP Agent Development Kit (ADK)</strong> framework, <strong>Python 3.13 JIT compiler</strong>, and <strong>GIL-less free-threading</strong> on Google Cloud Run.
                     </p>
-                    <div class="entry-tags">
-                        <a href="#k3" class="tag-link">K₃ Minimal Witness</a>
-                        <a href="#forbidden" class="tag-link">Forbidden Subgraph Catalog</a>
-                    </div>
-                </article>
 
-                <article class="paper-entry">
-                    <div class="entry-head">
-                        <h3 class="entry-title">2. Density Thresholds for Complex Necessity</h3>
-                        <span class="entry-code">REQ :: 02</span>
+                    <div class="table-wrapper">
+                        <table class="concept-table">
+                            <thead>
+                                <tr>
+                                    <th>DOMAIN</th>
+                                    <th>PARAMETER</th>
+                                    <th>BELOW CRITICAL</th>
+                                    <th>AT CRITICAL</th>
+                                    <th>ABOVE CRITICAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong class="cyan">Graph (Erdős)</strong></td>
+                                    <td>$p = \text{edge prob}$</td>
+                                    <td>Fragmented components</td>
+                                    <td>Giant component</td>
+                                    <td>Connected ($\beta_1 > 0$)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="gold">Ternary (BitNet)</strong></td>
+                                    <td>Scale factor $\gamma$</td>
+                                    <td>Continuous weights</td>
+                                    <td>Round to $\pm 1$</td>
+                                    <td>Discrete $\{-1, 0, +1\}$</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="cyan">Portfolio (Markowitz)</strong></td>
+                                    <td>Lagrange $\lambda$</td>
+                                    <td>Asset at zero weight</td>
+                                    <td>Asset enters portfolio</td>
+                                    <td>Asset dominates</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="gold">Options (Black-Scholes)</strong></td>
+                                    <td>Volatility $\sigma$</td>
+                                    <td>Deep OTM ($N(d_2) < 0.5$)</td>
+                                    <td>ATM ($N(d_2) = 0.5$)</td>
+                                    <td>Deep ITM ($N(d_2) > 0.5$)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="cyan">Dyadic (Rényi)</strong></td>
+                                    <td>$\beta$ parameter</td>
+                                    <td>Information preserved</td>
+                                    <td>1 bit/iteration loss</td>
+                                    <td>Chaotic shift</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <p class="entry-body">
-                        Given a large context graph $G = (V, E)$, at what edge density $p = |E| / \binom{|V|}{2}$ does the probability that a randomly drawn admissible transition assignment <strong>requires</strong> complex or quaternionic amplitudes approach 1? This is an Erdős–Rényi phase transition applied to foundations — a sharp structural threshold driven by cycle topology ($\beta_1 > 0$).
+
+                    <h2 class="section-title">1. GCP Agent Development Kit (ADK) Architecture</h2>
+                    <p>Quantitative reasoning is orchestrated via GCP ADK multi-agent pipelines:</p>
+                    <div class="code-block">
+                        <pre><code># GCP ADK Multi-Agent Reasoning Pipeline
+GET /api/v1/adk/agent?query=What+is+the+minimal+graph+that+forces+complex+amplitudes?
+
+Response:
+{
+  "gcp_project": "axiomquant",
+  "adk_agent_name": "AxiomQuant-ADK-Agent",
+  "pipeline_status": "SUCCESS",
+  "reasoning_steps": [
+    {"step": 1, "agent_role": "Graph Topology Agent", "output": {"minimal_witness": "K3 (Triangle)"}},
+    {"step": 2, "agent_role": "Stochastic Options Agent", "output": {"volatility_regime": "Normal"}},
+    {"step": 3, "agent_role": "Markowitz QP Agent", "output": {"max_sharpe_ratio": 1.842}}
+  ]
+}</code></pre>
+                    </div>
+
+                    <h2 class="section-title">2. Mathematical Isomorphism</h2>
+                    <p>Each system possesses five structural invariants:</p>
+                    <ol class="styled-list">
+                        <li><strong>State space</strong> (graph edges, weight matrix, portfolio vector, option price, bit sequence)</li>
+                        <li><strong>Critical parameter</strong> ($p, \gamma, \lambda, \sigma, \beta$)</li>
+                        <li><strong>Threshold condition</strong> ($p=1/n, |w/\gamma|=0.5, w_i \text{ crosses } 0, N(d)=0.5, \beta=2$)</li>
+                        <li><strong>Phase transition</strong> — sharp change in macroscopic behavior at the threshold</li>
+                        <li><strong>Scaling law</strong> — how the transition sharpens as system size $N \to \infty$</li>
+                    </ol>
+
+                    <h2 class="section-title">3. Graph → Ternary Bridge</h2>
+                    <p>The strongest bridge connects Erdős–Rényi $G(n,p)$ random graphs to BitNet b1.58 ternary matrices:</p>
+                    <div class="code-block">
+                        <pre><code>Graph edges ≡ Ternary weights {-1, 0, +1}
+Giant component threshold (p = 1/n) ≡ Quantization threshold (|w/scale| = 0.5)
+β₁ (cycle rank) ≡ Sparsity &amp; topological memory</code></pre>
+                    </div>
+
+                    <h2 class="section-title">4. Research Lineage</h2>
+                    <div class="lineage-tree">
+                        <pre><code>Erdős &amp; Rényi (1959) — Random Graphs &amp; Phase Transitions
+    │
+    ├──→ Markowitz (1952) — Portfolio Selection &amp; Convex Frontiers
+    ├──→ Black &amp; Scholes (1973) — Option Pricing &amp; Risk-Neutral Measures
+    ├──→ Rényi (1957) — β-Transformations &amp; Symbolic Dynamics
+    │       └─→ Dyadic Map → BitNet b1.58 (Ma et al., 2024)
+    │
+    └─→ O'Hara (1995) — Market Microstructure Theory
+            └─→ Almgren &amp; Chriss (2000) — Optimal Execution</code></pre>
+                    </div>
+                </div>
+
+                <!-- PAPER 8: BACKYARD ULTRA LOOP ENGINEERING -->
+                <div class="paper-content" id="paper-backyard-ultra">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">MONOGRAPH CHAPTER 08</span>
+                        <span class="meta-tag cyan">LOOP ENGINEERING</span>
+                        <span class="meta-tag gcp">🤖 AGENTS &amp; MCPs</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">The Backyard Ultra of Autonomous Intelligence: Loop Engineering, MCPs &amp; Agentic Endurance</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <p class="lead-text">
+                        In a Backyard Ultra (pioneered by Lazarus Lake at Big's Backyard Ultra), runners must complete a 4.167-mile loop every hour, on the hour, indefinitely until only one runner remains. There is no fixed distance, no finish line — only the continuous loop of execution.
                     </p>
-                    <div class="entry-tags">
-                        <a href="#density" class="tag-link">Density Threshold Results</a>
-                        <a href="https://arxiv.org/abs/2402.17764" target="_blank" class="tag-link">BitNet b1.58 ↗</a>
-                    </div>
-                </article>
 
-                <article class="paper-entry">
-                    <div class="entry-head">
-                        <h3 class="entry-title">3. Axiomatic Discrimination Capacity</h3>
-                        <span class="entry-code">REQ :: 03</span>
+                    <div class="code-block">
+                        <pre><code>Hour 01 ───► Lap 1 (4.167 mi) ───► Reset / Recover ───► Hour 02 ───► Lap 2 (4.167 mi) ...
+Turn 01 ───► Prompt / Tool   ───► Observation     ───► Turn 02 ───► Reflect / Act ...</code></pre>
                     </div>
-                    <p class="entry-body">
-                        For any proposed foundational axiom $A$, what is the minimum cycle rank $\beta_1$ required for $A$ to eliminate at least one non-quantum realization space? $\beta_1 = 1$ is the minimal witness — one cycle, one holonomy, one complex number. If $\beta_1 = 0$, you stay real. The discrimination capacity of an axiom is the smallest $\beta_1$ at which it makes a distinction.
+
+                    <p>
+                        In autonomous AI systems, <strong>Loop Engineering</strong> is the discipline of structuring long-horizon reasoning into clean, deterministic, self-correcting laps.
                     </p>
-                    <div class="entry-tags">
-                        <a href="#axioms" class="tag-link">Axiom Discrimination Table</a>
+
+                    <h2 class="section-title">1. The Isomorphism: Backyard Ultra vs. Agentic Architecture</h2>
+                    
+                    <div class="table-wrapper">
+                        <table class="concept-table">
+                            <thead>
+                                <tr>
+                                    <th>BACKYARD ULTRA RULE</th>
+                                    <th>AGENTIC ARCHITECTURE EQUIVALENT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong class="cyan">The 4.167-mile lap</strong></td>
+                                    <td>The Execution Turn (Prompt → Think → Tool Call → Observation)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="gold">The 1-hour time budget</strong></td>
+                                    <td>Context Window &amp; Token Budget per turn</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="cyan">The Yard Bell (Start on the h)</strong></td>
+                                    <td>Reactive Wakeup / Event Trigger (No polling)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="gold">Crew Station / Support Tent</strong></td>
+                                    <td>MCP (Model Context Protocol) Tools &amp; Memory Servers</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="cyan">Runner Strategy / Gear</strong></td>
+                                    <td>Skills (SKILL.md specs &amp; tool modules)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong class="gold">The Last Runner Standing</strong></td>
+                                    <td>Autonomous Termination Criterion / Goal Achievement</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                </article>
-            </section>
 
-            <!-- Section 02: Threshold Taxonomy -->
-            <section class="planet-section" id="taxonomy">
-                <h2 class="section-label">02 // THRESHOLD TAXONOMY</h2>
+                    <h2 class="section-title">2. The 6 Pillars of Loop Engineering</h2>
+                    
+                    <ol class="styled-list">
+                        <li><strong>LLMs as Base Reasoning Engines</strong>: The LLM is the stride engine of the loop. Each turn ingests previous observations, evaluates progress against the invariant goal, and determines the next atomic action.</li>
+                        <li><strong>Agents as Goal-Oriented Runners</strong>: An Agent is an LLM bound to a specific persona, toolset, and objective function. An agent does not stop until empirical runtime verification proves success.</li>
+                        <li><strong>Coding Agents &amp; Self-Correcting TDD Laps</strong>: Coding agents run iterative refinement loops:
+                            <div class="code-block">
+                                <pre><code>RED (Write Test) ───► GREEN (Minimal Fix) ───► REFACTOR (Clean Code)</code></pre>
+                            </div>
+                        </li>
+                        <li><strong>Skills as Equipping Modules</strong>: Skills are composable, file-backed instruction packages (<code>SKILL.md</code>). Just as a runner selects hydration vests or trail shoes for specific weather, an agent equips specialized skills (<code>/canvas-design</code>, <code>codebase-memory-mcp</code>, <code>n8n-validation</code>) based on loop demands.</li>
+                        <li><strong>MCP (Model Context Protocol) Support Crew</strong>: MCP servers act as persistent support crews:
+                            <ul style="margin-left: 20px; margin-top: 6px;">
+                                <li><code>codebase-memory-mcp</code>: High-level graph search (<code>search_graph</code>, <code>trace_path</code>).</li>
+                                <li><code>chrome-devtools-mcp</code>: Live DOM inspection &amp; Web performance profiling.</li>
+                                <li><code>cloudrun</code>: Serverless GCP deployment and compute orchestration.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Loop Engineering &amp; State Control</strong>: Deterministic state persistence across loops (<code>working_memory.md</code>, scratchpads, git commits) outlives context truncation.</li>
+                    </ol>
 
-                <div class="table-container">
-                    <table class="taxonomy-grid">
-                        <thead>
-                            <tr>
-                                <th>β₁</th>
-                                <th>GRAPH CLASS</th>
-                                <th>FIELD</th>
-                                <th>MINIMAL WITNESS</th>
-                                <th>DISCRIMINATION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="code-num">0</span></td>
-                                <td>Trees, forests</td>
-                                <td><strong class="cyan-text">ℝ (Real)</strong></td>
-                                <td>$P_2$ (single edge)</td>
-                                <td>None — all real</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-num">1</span></td>
-                                <td>Unicyclic</td>
-                                <td><strong class="gold-text">ℂ (Complex)</strong></td>
-                                <td>$K_3$ (triangle)</td>
-                                <td>Quantum vs. classical</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-num">2–3</span></td>
-                                <td>Bicyclic / tricyclic</td>
-                                <td><strong class="cyan-text">ℍ (Quaternions)</strong></td>
-                                <td>$K_4$</td>
-                                <td>Spin-statistics</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-num">≥4</span></td>
-                                <td>Dense cyclic</td>
-                                <td><strong class="gold-text">𝕆 (Octonions)</strong></td>
-                                <td>Complete graph $K_5$</td>
-                                <td>Exceptional Lie groups</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <h2 class="section-title">3. The Loop Lifecycle Code Contract</h2>
+                    <div class="code-block">
+                        <pre><code>def backyard_ultra_loop(agent, task_goal):
+    lap = 0
+    state = load_persisted_state()
+
+    while not task_goal.is_fulfilled(state):
+        lap += 1
+        # 1. Equip relevant skills
+        skills = select_skills(state.current_needs)
+        
+        # 2. Run turn execution
+        observation = agent.step(task_goal, state, skills)
+        
+        # 3. Empirically verify runtime output
+        success, verification_log = verify_runtime(observation)
+        
+        # 4. Update persistent disk state
+        state.update(observation, verification_log)
+        persist_state_to_disk(state)
+
+    return state.final_artifact</code></pre>
+                    </div>
                 </div>
 
-                <div class="theorem-box">
-                    <div class="thm-top">
-                        <span class="thm-crest">△</span>
-                        <span class="thm-label">Theorem (Erdős–Nate, 2026) — Minimal Forbidden Subgraph</span>
+                <!-- PAPER 2: ULTRAMARATHON -->
+                <div class="paper-content" id="paper-ultramarathon">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">MONOGRAPH CHAPTER 02</span>
+                        <span class="meta-date">JULY 2026</span>
                     </div>
-                    <p class="thm-prose">
-                        A context graph $G$ is $\mathbb{R}$-realizable for every admissible transition assignment if and only if $G$ contains no subgraph with $\beta_1 > 0$. Equivalently: $G$ is a forest. The minimal forbidden subgraph is $K_3$, with $\beta_1(K_3) = 1$. Any graph containing a cycle can be assigned a transition set whose holonomy forces a field extension beyond $\mathbb{R}$.
+
+                    <h1 class="article-title">The Ultramarathon: Deep Mathematics of Thresholds</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <h2 class="section-title">1. Zeta Zeros ≡ Random Matrix Eigenvalues</h2>
+                    <p>
+                        Montgomery (1973), over tea with Dyson at Princeton, discovered that the pair correlation of Riemann zeta zeros matches the GUE (Gaussian Unitary Ensemble) random matrix eigenvalue spacing:
+                    </p>
+                    <div class="code-block">
+                        <pre><code>ρ(u) = 1 - (sin(πu) / πu)²</code></pre>
+                    </div>
+                    <p>
+                        <strong>Threshold connection</strong>: The zeta zeros form a point process on the critical line $\text{Re}(s) = 1/2$. Their spacing statistics encode a "spectral rigidity" — zeros repel each other (level repulsion), just like eigenvalues of random matrices. This repulsion is a threshold phenomenon: zeros cannot get too close. The minimal spacing is governed by the same kernel that appears in the transfer operator's correlation decay.
+                    </p>
+
+                    <h2 class="section-title">2. Wigner Semicircle ≡ Free Central Limit Theorem</h2>
+                    <p>
+                        Wigner (1955): the eigenvalue density of an $N \times N$ random symmetric matrix with i.i.d. entries converges, as $N \to \infty$, to the semicircle:
+                    </p>
+                    <div class="code-block">
+                        <pre><code>ρ(x) = (2 / πR²) √(R² - x²),   |x| ≤ R</code></pre>
+                    </div>
+                    <p>
+                        The moments are <strong>Catalan numbers</strong>: $m_{2k} = C_k \cdot (R/2)^{2k}$, where $C_k = \frac{1}{k+1}\binom{2k}{k}$. Catalan numbers count non-crossing partitions, Dyck paths, binary trees, and polygon triangulations.
+                    </p>
+
+                    <h2 class="section-title">3. Ising Model ≡ Max-Cut ≡ NP-Hard Optimization</h2>
+                    <p>
+                        The Ising Hamiltonian $H(\sigma) = -J \sum_{\langle ij \rangle} \sigma_i \sigma_j$ on a graph $G = (V,E)$ is mathematically equivalent to Max-Cut. At the critical temperature $T_c$, the spin system undergoes a phase transition from paramagnetic (disordered) to ferromagnetic (ordered). This $T_c$ is the physical manifestation of the graph's cycle rank $\beta_1$.
                     </p>
                 </div>
-            </section>
 
-            <!-- Section 03: Research Archive -->
-            <section class="planet-section" id="archive">
-                <h2 class="section-label">03 // RESEARCH ARCHIVE</h2>
-
-                <div class="archive-list">
-                    <article class="paper-entry">
-                        <div class="entry-head">
-                            <h3 class="entry-title">Erdős & Rényi — On the Evolution of Random Graphs (1960)</h3>
-                            <span class="entry-code">1960</span>
-                        </div>
-                        <div class="entry-byline">P. Erdős, A. Rényi. Publ. Math. Inst. Hung. Acad. Sci. 5, 17–61.</div>
-                        <p class="entry-body">The paper proving sharp phase transitions in random graphs: below a critical edge probability, only small components exist; above it, a giant component spans the graph. The mathematical ancestor of the density threshold question for complex necessity — at what $p$ does $\mathbb{C}$ become almost surely required?</p>
-                        <div class="entry-tags">
-                            <a href="https://www.renyi.hu/~p_erdos/1960-10.pdf" target="_blank" class="tag-link">PDF ↗</a>
-                            <a href="https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model" target="_blank" class="tag-link">Wikipedia ↗</a>
-                        </div>
-                    </article>
-
-                    <article class="paper-entry">
-                        <div class="entry-head">
-                            <h3 class="entry-title">BitNet b1.58 — The Era of 1-bit LLMs (2024)</h3>
-                            <span class="entry-code">2024</span>
-                        </div>
-                        <div class="entry-byline">S. Ma et al. arXiv:2402.17764.</div>
-                        <p class="entry-body">Ternary quantization $\{-1, 0, +1\}$ matches full-precision transformer performance. The ternary threshold — when a weight crosses the $\text{round}()$ boundary — is a quantized version of the Erdős–Rényi threshold: a sharp transition from continuous to discrete. MLX-QUANT implements fused Metal kernels for this.</p>
-                        <div class="entry-tags">
-                            <a href="https://arxiv.org/abs/2402.17764" target="_blank" class="tag-link">arXiv ↗</a>
-                            <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" class="tag-link">MLX-QUANT Repo ↗</a>
-                        </div>
-                    </article>
-
-                    <article class="paper-entry">
-                        <div class="entry-head">
-                            <h3 class="entry-title">Spectral Graph Theory (1997)</h3>
-                            <span class="entry-code">1997</span>
-                        </div>
-                        <div class="entry-byline">Fan Chung. AMS Regional Conference Series in Mathematics, No. 92.</div>
-                        <p class="entry-body">The eigenvalues of a graph's Laplacian encode its structure. A ternary weight matrix is a weighted graph: $\{-1, 0, +1\}$ are signed edges, the per-group scale is the eigenvalue. Spectral methods bridge the Erdős graph tradition and the quantized weight matrices of MLX-QUANT.</p>
-                        <div class="entry-tags">
-                            <a href="https://bookstore.ams.org/cbms-92" target="_blank" class="tag-link">AMS ↗</a>
-                            <a href="https://en.wikipedia.org/wiki/Spectral_graph_theory" target="_blank" class="tag-link">Wikipedia ↗</a>
-                        </div>
-                    </article>
-
-                    <article class="paper-entry">
-                        <div class="entry-head">
-                            <h3 class="entry-title">Dyadic Transformation & Context Realizability</h3>
-                            <span class="entry-code">2026</span>
-                        </div>
-                        <div class="entry-byline">N. Flyxion, P. Lodri. In preparation.</div>
-                        <p class="entry-body">Chapter 5 of the monograph: spanning trees, cycle rank $\beta_1$, and the General Realizability Criterion. Structural depth $d_{\text{obs}}(A)$ versus $\beta_1$. Distinguishes topological obstruction from composition obstruction.</p>
-                        <div class="entry-tags">
-                            <a href="/dyadic" class="tag-link">Dyadic Visualizer ↗</a>
-                        </div>
-                    </article>
-                </div>
-            </section>
-
-            <!-- Section 04: Building -->
-            <section class="planet-section" id="building">
-                <h2 class="section-label">04 // BUILDING ON THE FOUNDATION</h2>
-
-                <div class="building-cards">
-                    <a href="https://github.com/8b-is/MLX-QUANT" target="_blank" class="b-card">
-                        <div class="b-head">
-                            <strong>MLX-QUANT</strong>
-                            <span class="pill cyan">v1.4.2</span>
-                            <span class="pill gold">M1+M3</span>
-                        </div>
-                        <p class="b-desc">Native ternary Metal kernels on Apple Silicon. 12.80x compression. Fused qmv_fast GPU kernels. 260/260 tests pass.</p>
-                    </a>
-
-                    <a href="/markowitz" class="b-card gold-border">
-                        <div class="b-head">
-                            <strong class="gold-text">Markowitz Frontier QP</strong>
-                            <span class="pill gold">portfolio</span>
-                        </div>
-                        <p class="b-desc">From-scratch mean-variance optimization and the efficient frontier. Quadratic Programming threshold surface solver with 5 preset universes.</p>
-                    </a>
-
-                    <a href="/black-scholes" class="b-card">
-                        <div class="b-head">
-                            <strong>Black-Scholes Engine</strong>
-                            <span class="pill cyan">analytics</span>
-                        </div>
-                        <p class="b-desc">Interactive Black-Scholes pricing, Greeks profile (Δ, Γ, Θ, ν), and Monte Carlo GBM path simulator.</p>
-                    </a>
-
-                    <a href="/microstructure" class="b-card">
-                        <div class="b-head">
-                            <strong>L2 Microstructure</strong>
-                            <span class="pill gold">orderbook</span>
-                        </div>
-                        <p class="b-desc">Interactive Level-2 limit orderbook depth ladder, VPIN toxicity model, and bid-ask spread dynamics.</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- Planet Footer -->
-            <footer class="planet-footer">
-                <div class="footer-meta">
-                    <span class="mono-label">AXIOM QUANT ARCHIVE // SPECTRAL EQUILIBRIUM</span>
-                    <div class="footer-links">
-                        <a href="https://github.com/8b-is/MLX-QUANT" target="_blank">MLX-QUANT</a> • 
-                        <a href="https://github.com/8b-is/ayeos" target="_blank">ayeOS</a> • 
-                        <a href="https://github.com/8b-is/vaked" target="_blank">vaked</a> • 
-                        <span>axiomquant.org</span>
+                <!-- PAPER 3: DYADIC-TERNARY BRIDGE -->
+                <div class="paper-content" id="paper-dyadic-ternary">
+                    <div class="article-meta">
+                        <span class="meta-tag cyan">MONOGRAPH CHAPTER 03</span>
+                        <span class="meta-date">JULY 2026</span>
                     </div>
-                    <span class="mono-label gold-text">FOUNDATION PHASE △</span>
-                </div>
-            </footer>
 
+                    <h1 class="article-title">Dyadic Transformation &amp; Context Realizability</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <p class="lead-text">
+                        The dyadic transformation $T(x) = 2x \pmod 1$ maps the unit interval to itself, generating the canonical Bernoulli shift. When extended to context transition graphs, the cycle rank $\beta_1$ determines the exact field extension required to close holonomy.
+                    </p>
+
+                    <h2 class="section-title">1. Spanning Trees &amp; Cycle Rank</h2>
+                    <p>
+                        For any context graph $G = (V, E)$, the cycle rank is given by $\beta_1(G) = |E| - |V| + k$, where $k$ is the number of connected components.
+                    </p>
+                    <ul class="styled-list">
+                        <li>If $\beta_1 = 0$, $G$ is a forest, and all admissible transition assignments are $\mathbb{R}$-realizable.</li>
+                        <li>If $\beta_1 = 1$, the minimal witness $K_3$ (triangle) forces a complex amplitude field $\mathbb{C}$.</li>
+                        <li>If $\beta_1 \ge 2$, dense cycle overlaps force quaternionic $\mathbb{H}$ or octonionic $\mathbb{O}$ structures.</li>
+                    </ul>
+                </div>
+
+                <!-- PAPER 4: MICROSTRUCTURE & CHAOS -->
+                <div class="paper-content" id="paper-microstructure-chaos">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">MONOGRAPH CHAPTER 04</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">Market Microstructure &amp; Chaos</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <p class="lead-text">
+                        High-frequency Level-2 orderbook dynamics, Volume-Synchronized Probability of Toxicity (VPIN), and Almgren-Chriss optimal execution control.
+                    </p>
+
+                    <h2 class="section-title">1. VPIN Information Leakage</h2>
+                    <p>
+                        VPIN measures order flow toxicity by sampling volume buckets $V$:
+                    </p>
+                    <div class="code-block">
+                        <pre><code>VPIN = (Σ |V_b - V_s|) / (N * V)</code></pre>
+                    </div>
+                    <p>
+                        When VPIN crosses the critical threshold $0.70$, liquidity providers face severe adverse selection and widen bid-ask spreads dramatically.
+                    </p>
+                </div>
+
+                <!-- PAPER 5: TRANSFER OPERATOR -->
+                <div class="paper-content" id="paper-transfer-operator">
+                    <div class="article-meta">
+                        <span class="meta-tag cyan">MONOGRAPH CHAPTER 05</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">The Transfer Operator &amp; the Devil's Staircase</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <h2 class="section-title">1. Frobenius-Perron-Ruelle Operator</h2>
+                    <p>
+                        For a map $f: X \to X$, the transfer operator $\mathcal{L}$ acts on density functions $\rho$ as:
+                    </p>
+                    <div class="code-block">
+                        <pre><code>(L ρ)(x) = ½ ρ(x/2) + ½ ρ((x+1)/2)</code></pre>
+                    </div>
+                    <p>
+                        The discrete spectrum consists of eigenvalues $\lambda_k = 2^{-k}$ with Bernoulli polynomials $B_k(x)$ as eigenfunctions. The spectral gap $1 - \lambda_1 = 1/2$ governs the rate of correlation decay in chaotic dynamics.
+                    </p>
+                </div>
+
+                <!-- PAPER 6: BLACK-SCHOLES GREEKS -->
+                <div class="paper-content" id="paper-black-scholes">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">MONOGRAPH CHAPTER 06</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">Black-Scholes &amp; Stochastic Calculus</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <p class="lead-text">
+                        European option valuation under Geometric Brownian Motion $dS_t = \mu S_t dt + \sigma S_t dW_t$ and exact analytical Greeks ($\Delta, \Gamma, \Theta, \nu, \rho$).
+                    </p>
+
+                    <div class="code-block">
+                        <pre><code>Call = S * N(d1) - K * exp(-rT) * N(d2)
+d1 = (ln(S/K) + (r + ½ σ²) T) / (σ √T)
+d2 = d1 - σ √T</code></pre>
+                    </div>
+                </div>
+
+                <!-- PAPER 7: BIBLIOGRAPHY -->
+                <div class="paper-content" id="paper-bibliography">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">BIBLIOGRAPHY &amp; CATALOG</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">Foundational Bibliography</h1>
+                    <div class="byline">Curated Catalog of Foundational Literature</div>
+
+                    <ul class="styled-list">
+                        <li><strong>Erdős, P., &amp; Rényi, A. (1959).</strong> On random graphs I. <em>Publicationes Mathematicae Debrecen</em>, 6, 290–297.</li>
+                        <li><strong>Markowitz, H. (1952).</strong> Portfolio selection. <em>The Journal of Finance</em>, 7(1), 77–91.</li>
+                        <li><strong>Black, F., &amp; Scholes, M. (1973).</strong> The pricing of options and corporate liabilities. <em>Journal of Political Economy</em>, 81(3), 637–654.</li>
+                        <li><strong>Ma, S., et al. (2024).</strong> The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits. <em>arXiv:2402.17764</em>.</li>
+                        <li><strong>Fan Chung (1997).</strong> <em>Spectral Graph Theory</em>. AMS Regional Conference Series in Mathematics, No. 92.</li>
+                    </ul>
+                </div>
+
+            </article>
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2.6.0"></script>
 </body>
 </html>
