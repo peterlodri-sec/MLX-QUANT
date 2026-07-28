@@ -1,7 +1,8 @@
 {
   "name": "axiomquant",
   "version": "1.0.0",
-  "description": "Axiom Quant skill for quantitative calculus, graph realizability, BitNet b1.58 ternary quantization, Markowitz QP solvers, and Backyard Ultra Loop Engineering.",
+  "description":
+      "Axiom Quant skill for quantitative calculus, graph realizability, BitNet b1.58 ternary quantization, Markowitz QP solvers, and Backyard Ultra Loop Engineering.",
   "schema": "https://axiomquant.org/.well-known/skills/axiomquant.json",
   "skill_url": "https://axiomquant.org/skills/axiomquant/SKILL.md",
   "author": "N. Flyxion & P. Lodri",
