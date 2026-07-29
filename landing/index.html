@@ -460,23 +460,26 @@
                         <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--gold);">Figure 1.1: Axiom Quant Five Threshold Domains Architecture Infographic</div>
                     </div>
 
-                    <h2 class="section-title">1. GCP Agent Development Kit (ADK) Architecture</h2>
-                    <p>Quantitative reasoning is orchestrated via GCP ADK multi-agent pipelines:</p>
-                    <div class="code-block">
-                        <pre><code># GCP ADK Multi-Agent Reasoning Pipeline
-GET /api/v1/adk/agent?query=What+is+the+minimal+graph+that+forces+complex+amplitudes?
+                    <h2 class="section-title">2. Interactive Google Quantum AI Sycamore &amp; Willow Circuit Simulator</h2>
+                    <p>Simulate quantum entanglement state vectors on Google Sycamore/Willow quantum hardware (via Cirq / qsim):</p>
+                    <div style="background: #04060A; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                            <label style="font-family: var(--font-mono); font-size: 12px; color: var(--gold);">Qubits (2-54):</label>
+                            <input type="number" id="quantumQubitsInput" value="4" min="2" max="54" style="background: #0D1117; border: 1px solid var(--border-color); color: var(--cyan); padding: 4px 8px; font-family: var(--font-mono); border-radius: 4px; width: 60px;" />
+                            <button onclick="runLiveQuantumSim()" style="background: var(--cyan); color: #000; border: none; padding: 6px 14px; font-family: var(--font-mono); font-weight: bold; border-radius: 4px; cursor: pointer;">RUN QUANTUM CIRCUIT ⚡</button>
+                        </div>
+                        <div id="quantumSimOutput" style="background: #000; border: 1px solid rgba(0, 240, 255, 0.3); padding: 12px; font-family: var(--font-mono); font-size: 12px; color: #00FF66; border-radius: 6px; white-space: pre-wrap;">Click "RUN QUANTUM CIRCUIT" to simulate Google Sycamore 4-qubit entangling gates...</div>
+                    </div>
 
-Response:
-{
-  "gcp_project": "axiomquant",
-  "adk_agent_name": "AxiomQuant-ADK-Agent",
-  "pipeline_status": "SUCCESS",
-  "reasoning_steps": [
-    {"step": 1, "agent_role": "Graph Topology Agent", "output": {"minimal_witness": "K3 (Triangle)"}},
-    {"step": 2, "agent_role": "Stochastic Options Agent", "output": {"volatility_regime": "Normal"}},
-    {"step": 3, "agent_role": "Markowitz QP Agent", "output": {"max_sharpe_ratio": 1.842}}
-  ]
-}</code></pre>
+                    <h2 class="section-title">3. Interactive BitNet b1.58 Ternary Quantization Calculator</h2>
+                    <p>Convert float32 weight vectors into BitNet ternary centroids $w_q \in \{-1, 0, +1\}$ with LWE lattice noise estimation:</p>
+                    <div style="background: #04060A; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                            <label style="font-family: var(--font-mono); font-size: 12px; color: var(--gold);">Float32 Weights:</label>
+                            <input type="text" id="ternaryWeightsInput" value="-0.85, 0.05, 1.2, -0.4, 0.9, -1.5, 0.0, 0.7" style="background: #0D1117; border: 1px solid var(--border-color); color: var(--gold); padding: 4px 8px; font-family: var(--font-mono); border-radius: 4px; flex-grow: 1; min-width: 240px;" />
+                            <button onclick="runTernaryQuantization()" style="background: var(--gold); color: #000; border: none; padding: 6px 14px; font-family: var(--font-mono); font-weight: bold; border-radius: 4px; cursor: pointer;">QUANTIZE TERNARY ⚖️</button>
+                        </div>
+                        <div id="ternaryQuantOutput" style="background: #000; border: 1px solid rgba(255, 215, 0, 0.3); padding: 12px; font-family: var(--font-mono); font-size: 12px; color: #FFFF00; border-radius: 6px; white-space: pre-wrap;">Click "QUANTIZE TERNARY" to compute BitNet b1.58 ternary centroids...</div>
                     </div>
                 </div>
 
