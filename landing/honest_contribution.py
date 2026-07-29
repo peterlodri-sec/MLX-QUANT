@@ -22,21 +22,49 @@ from pydantic import BaseModel, Field
 # 1. Pydantic Models & OpenAPI 3.1 Schemas
 # ---------------------------------------------------------------------------
 
+
 class ContributionSubmission(BaseModel):
-    title: str = Field(..., description="Title of the research paper or monograph", example="Spectral Rigidity in Quantum Chaos")
-    author: str = Field(..., description="Author full name or research group", example="N. Flyxion & P. Lodri")
-    author_handle: str | None = Field(default=None, description="GitHub or Standard Galactic handle", example="@standardgalactic")
-    content_markdown: str = Field(..., description="LaTeX / Markdown research paper content")
-    tags: list[str] = Field(default_factory=list, description="Categorical tags", example=["quantum-chaos", "random-matrices"])
-    signature_ed25519: str | None = Field(default=None, description="Optional Hex Ed25519 signature over SHA-256 payload")
-    ephemeral_ram_only: bool = Field(default=False, description="If true, keep in RAM buffer without writing persistent storage")
+    title: str = Field(
+        ...,
+        description="Title of the research paper or monograph",
+        example="Spectral Rigidity in Quantum Chaos",
+    )
+    author: str = Field(
+        ...,
+        description="Author full name or research group",
+        example="N. Flyxion & P. Lodri",
+    )
+    author_handle: str | None = Field(
+        default=None,
+        description="GitHub or Standard Galactic handle",
+        example="@standardgalactic",
+    )
+    content_markdown: str = Field(
+        ..., description="LaTeX / Markdown research paper content"
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Categorical tags",
+        example=["quantum-chaos", "random-matrices"],
+    )
+    signature_ed25519: str | None = Field(
+        default=None, description="Optional Hex Ed25519 signature over SHA-256 payload"
+    )
+    ephemeral_ram_only: bool = Field(
+        default=False,
+        description="If true, keep in RAM buffer without writing persistent storage",
+    )
+
 
 class ContributionReceipt(BaseModel):
     contribution_id: str = Field(..., example="contrib-7f9a2b10")
-    sha256_hash: str = Field(..., example="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+    sha256_hash: str = Field(
+        ..., example="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    )
     timestamp: str = Field(..., example="2026-07-28T13:07:00Z")
     status: str = Field(..., example="VAULTED_GCP_STORAGE")
     storage_type: str = Field(..., example="GCP_CLOUD_STORAGE / RAM_BUFFER")
+
 
 class ContributionHeader(BaseModel):
     contribution_id: str
@@ -47,6 +75,7 @@ class ContributionHeader(BaseModel):
     sha256_hash: str
     timestamp: str
 
+
 class VerificationResult(BaseModel):
     contribution_id: str
     hash_valid: bool
@@ -54,17 +83,21 @@ class VerificationResult(BaseModel):
     signature_algorithm: str
     honesty_score: float
 
+
 # ---------------------------------------------------------------------------
 # 2. Cloud-Agnostic Storage Protocol & Implementation
 # ---------------------------------------------------------------------------
+
 
 class StorageBackend(Protocol):
     async def save(self, contribution_id: str, data: dict[str, Any]) -> str: ...
     async def get(self, contribution_id: str) -> dict[str, Any] | None: ...
     async def list_all(self, tag_filter: str | None = None) -> list[dict[str, Any]]: ...
 
+
 class RAMStorageBackend:
     """In-memory RAM storage backend for development, testing & ephemeral contributions."""
+
     def __init__(self) -> None:
         self._vault: dict[str, dict[str, Any]] = {}
 
@@ -81,19 +114,24 @@ class RAMStorageBackend:
             items = [item for item in items if tag_filter in item.get("tags", [])]
         return items
 
+
 class GCPCloudStorageBackend:
     """GCP Cloud Storage implementation targeting gs://axiomquant-research-vault."""
+
     def __init__(self, bucket_name: str = "axiomquant-research-vault") -> None:
         self.bucket_name = bucket_name
         self.ram_fallback = RAMStorageBackend()
 
     async def save(self, contribution_id: str, data: dict[str, Any]) -> str:
         try:
-            from google.cloud import storage # type: ignore
+            from google.cloud import storage  # type: ignore
+
             client = storage.Client()
             bucket = client.bucket(self.bucket_name)
             blob = bucket.blob(f"raw_contributions/{contribution_id}.json")
-            blob.upload_from_string(json.dumps(data, indent=2), content_type="application/json")
+            blob.upload_from_string(
+                json.dumps(data, indent=2), content_type="application/json"
+            )
             return f"gs://{self.bucket_name}/raw_contributions/{contribution_id}.json"
         except Exception as err:
             # Fallback to RAM storage if GCP credentials / bucket not accessible locally
@@ -102,7 +140,8 @@ class GCPCloudStorageBackend:
 
     async def get(self, contribution_id: str) -> dict[str, Any] | None:
         try:
-            from google.cloud import storage # type: ignore
+            from google.cloud import storage  # type: ignore
+
             client = storage.Client()
             bucket = client.bucket(self.bucket_name)
             blob = bucket.blob(f"raw_contributions/{contribution_id}.json")
@@ -115,7 +154,8 @@ class GCPCloudStorageBackend:
 
     async def list_all(self, tag_filter: str | None = None) -> list[dict[str, Any]]:
         try:
-            from google.cloud import storage # type: ignore
+            from google.cloud import storage  # type: ignore
+
             client = storage.Client()
             bucket = client.bucket(self.bucket_name)
             blobs = bucket.list_blobs(prefix="raw_contributions/")
@@ -131,6 +171,7 @@ class GCPCloudStorageBackend:
             pass
         return await self.ram_fallback.list_all(tag_filter)
 
+
 # Global storage instance
 default_storage: StorageBackend = GCPCloudStorageBackend()
 
@@ -140,14 +181,19 @@ default_storage: StorageBackend = GCPCloudStorageBackend()
 
 router = APIRouter(prefix="/api/v1/contribution", tags=["Honest Contribution"])
 
+
 @router.post("/submit", response_model=ContributionReceipt, status_code=201)
-async def submit_contribution(submission: ContributionSubmission) -> ContributionReceipt:
+async def submit_contribution(
+    submission: ContributionSubmission,
+) -> ContributionReceipt:
     """Submit a cryptographically signed honest research contribution."""
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
     cid = f"contrib-{uuid.uuid4().hex[:12]}"
 
     # Compute immutable SHA-256 payload hash
-    payload_bytes = f"{submission.title}|{submission.author}|{submission.content_markdown}|{timestamp}".encode("utf-8")
+    payload_bytes = f"{submission.title}|{submission.author}|{submission.content_markdown}|{timestamp}".encode(
+        "utf-8"
+    )
     sha256_hash = hashlib.sha256(payload_bytes).hexdigest()
 
     record = {
@@ -169,7 +215,11 @@ async def submit_contribution(submission: ContributionSubmission) -> Contributio
         storage_type = "EPHEMERAL_RAM_BUFFER"
     else:
         storage_path = await default_storage.save(cid, record)
-        storage_type = "GCP_CLOUD_STORAGE" if storage_path.startswith("gs://") else "RAM_STORAGE_FALLBACK"
+        storage_type = (
+            "GCP_CLOUD_STORAGE"
+            if storage_path.startswith("gs://")
+            else "RAM_STORAGE_FALLBACK"
+        )
 
     return ContributionReceipt(
         contribution_id=cid,
@@ -179,8 +229,11 @@ async def submit_contribution(submission: ContributionSubmission) -> Contributio
         storage_type=storage_type,
     )
 
+
 @router.get("/list", response_model=list[ContributionHeader])
-async def list_contributions(tag: str | None = Query(default=None, description="Optional tag filter")) -> list[ContributionHeader]:
+async def list_contributions(
+    tag: str | None = Query(default=None, description="Optional tag filter")
+) -> list[ContributionHeader]:
     """List vaulted honest contributions."""
     items = await default_storage.list_all(tag_filter=tag)
     return [
@@ -196,20 +249,28 @@ async def list_contributions(tag: str | None = Query(default=None, description="
         for item in items
     ]
 
+
 @router.get("/verify/{contribution_id}", response_model=VerificationResult)
 async def verify_contribution(contribution_id: str) -> VerificationResult:
     """Cryptographically verify contribution honesty & SHA-256 payload integrity."""
     record = await default_storage.get(contribution_id)
     if not record:
-        raise HTTPException(status_code=404, detail=f"Contribution {contribution_id} not found in vault.")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Contribution {contribution_id} not found in vault.",
+        )
 
     # Re-compute SHA-256 hash to verify payload integrity
-    payload_bytes = f"{record['title']}|{record['author']}|{record['content_markdown']}|{record['timestamp']}".encode("utf-8")
+    payload_bytes = f"{record['title']}|{record['author']}|{record['content_markdown']}|{record['timestamp']}".encode(
+        "utf-8"
+    )
     expected_hash = hashlib.sha256(payload_bytes).hexdigest()
-    hash_valid = (expected_hash == record["sha256_hash"])
+    hash_valid = expected_hash == record["sha256_hash"]
 
     signature_valid = bool(record.get("signature_ed25519"))
-    sig_algo = "Ed25519 / FIPS 204 ML-DSA" if signature_valid else "SHA256-HMAC-UNSIGNED"
+    sig_algo = (
+        "Ed25519 / FIPS 204 ML-DSA" if signature_valid else "SHA256-HMAC-UNSIGNED"
+    )
 
     return VerificationResult(
         contribution_id=contribution_id,

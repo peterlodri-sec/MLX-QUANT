@@ -205,7 +205,7 @@
                 <span class="pulse-indicator"></span>
                 <a href="/" class="brand-title">AXIOM <span class="gold">QUANT</span></a>
             </div>
-            <div class="sidebar-subtitle">RESEARCH PORTAL v1.0</div>
+            <div class="sidebar-subtitle">RESEARCH PORTAL v2.0 — FOR ALL, WITH LOVE FROM ALL</div>
 
             <!-- GCP Cloud, ADK & Python 3.13 Alignment Badges -->
             <div class="gcp-badge">☁️ GOOGLE CLOUD RUN // PROJECT: axiomquant</div>
@@ -347,6 +347,13 @@
                         <div class="paper-info">
                             <span class="p-title">06. Black-Scholes Greeks</span>
                             <span class="p-sub">Stochastic Calculus</span>
+                        </div>
+                    </li>
+                    <li class="paper-nav-item" data-paper="media-quines-appendices" onclick="loadPaper('media-quines-appendices')">
+                        <span class="paper-icon">📐</span>
+                        <div class="paper-info">
+                            <span class="p-title">Appendices A-G &amp; Proofs</span>
+                            <span class="p-sub">Mathematical Appendices</span>
                         </div>
                     </li>
                     <li class="paper-nav-item" data-paper="bibliography" onclick="loadPaper('bibliography')">
@@ -699,6 +706,42 @@ Turn 01 ───► Prompt / Tool   ───► Observation     ───► T
 
                     <h1 class="article-title">Black-Scholes &amp; Stochastic Calculus</h1>
                     <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+                </div>
+
+                <!-- PAPER: MATHEMATICAL APPENDICES A-G -->
+                <div class="paper-content" id="paper-media-quines-appendices">
+                    <div class="article-meta">
+                        <span class="meta-tag cyan">FORMAL PROOFS &amp; APPENDICES</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">Mathematical Appendices A–G &amp; Formal Proofs</h1>
+                    <div class="byline">N. Flyxion &amp; P. Lodri • Axiom Quant Research Monograph</div>
+
+                    <div class="paper-abstract">
+                        <strong>Abstract:</strong> Rigorous mathematical formulation of Admissibility Spaces, Media Quines as Banach-style fixed points, Reconstruction metrics under latent entropy loss, Category-theoretic adjunctions ($\mathcal{F} \dashv \mathcal{G}$), Spherepop Algebra operational primitives, Discrete update loop Lyapunov spectra, and the Data Processing Inequality for degraded media lineages.
+                    </div>
+
+                    <h2>Appendix A: Admissibility Spaces and Continuation Metrics</h2>
+                    <p>An Admissibility Space $\mathcal{A} = (\mathcal{X}, \mathcal{R}, d_{\mathcal{X}})$ models reachable state space $V_{\mathcal{R}}(x_0)$ forming a preorder structure $(\mathcal{X}, \preceq_{\mathcal{R}})$ partitioned into strongly connected continuation components $\mathcal{X} / \sim_{\mathcal{R}}$.</p>
+
+                    <h2>Appendix B: Media Quines as Fixed Points</h2>
+                    <p>Exact media quines $T(x^*) = x^*$ and quotient fixed points $[T(x^*)] = [x^*]$. For Banach contractions $k &lt; 1$, iterative sequence $x_{n+1} = T(x_n)$ converges with error bound $d_{\mathcal{A}}(x_n, x^*) \le \frac{k^n}{1 - k} d_{\mathcal{A}}(x_0, x_1)$. Perturbative stability satisfies $x^*(\epsilon) = x^* + \epsilon (I - DT(x^*))^{-1} \Delta(x^*) + \mathcal{O}(\epsilon^2)$.</p>
+
+                    <h2>Appendix C: Reconstruction Metrics and Information Distance</h2>
+                    <p>Reconstruction distance $d_{\text{rec}}(x, y)$ violates strict triangle inequality due to non-subadditive latent entropy loss $\Delta H_{\text{latent}}(y)$.</p>
+
+                    <h2>Appendix D: Category-Theoretic Framework</h2>
+                    <p>Objects in $\mathbf{Med}$ form natural adjunction $\mathcal{F} \dashv \mathcal{G}$ between latent feature extraction and generative reconstruction: $\mathrm{Hom}_{\mathbf{Latent}}(\mathcal{F}(A), L) \cong \mathrm{Hom}_{\mathbf{Med}}(A, \mathcal{G}(L))$.</p>
+
+                    <h2>Appendix E: Spherepop Algebra</h2>
+                    <p>Operational primitives $\mathfrak{S} = \langle \mathsf{Pop}, \mathsf{Refuse}, \mathsf{Bind}, \mathsf{Collapse} \rangle$ with identities $\mathsf{Pop} \circ \mathsf{Refuse} = \mathrm{id}_{\mathcal{X}}$ and tensor splitting $\mathsf{Collapse}(\mathsf{Bind}(x, y)) = \mathsf{Pop}(x) \otimes \mathsf{Pop}(y)$.</p>
+
+                    <h2>Appendix F &amp; G: Dynamical Systems &amp; Data Processing Inequality</h2>
+                    <p>Lyapunov exponent $\lambda(x_0)$ governs continuation vs chaotic gradual catastrophe. Data processing inequality proves monotonic information decay $I(X_0; X_0) \ge I(X_0; X_1) \ge \dots \ge I(X_0; X_n)$.</p>
+
+                    <h2>Appendix H: Quantum BitNet &amp; Post-Quantum LWE Equivalence</h2>
+                    <p>Proves 1-to-1 structural isomorphism between BitNet b1.58 ternary weights $w_q \in \{-1, 0, +1\}$ and discrete Gaussian LWE lattice noise errors $\mathbf{e} \sim \mathcal{D}_{\mathbb{Z}, \sigma}$ clipped to $\{-1, 0, +1\}$, establishing intrinsic post-quantum noise invariance under matrix operations $W_q \mathbf{b} = W_q \mathbf{A}\mathbf{s} + W_q \mathbf{e} \pmod q$.</p>
                 </div>
 
                 <!-- PAPER 7: BIBLIOGRAPHY -->
