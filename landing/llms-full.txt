@@ -1,0 +1,19 @@
+# AXIOM QUANT (Δ) — FULL MONOGRAPH RESEARCH REPOSITORY & AGENT SPECIFICATION
+
+## System Overview
+AXIOM QUANT is an open quantitative computing platform built on Python 3.13 JIT free-threading, GCP ADK, and Google Quantum AI Cirq.
+
+## Theorem H.1 (Quantum BitNet & Post-Quantum LWE Equivalence)
+Ternary weights w_q in {-1, 0, +1} are 1-to-1 isomorphic to discrete Gaussian LWE lattice noise errors e ~ D_{Z, sigma} clipped to {-1, 0, +1}, establishing intrinsic post-quantum noise invariance under matrix operations W_q b = W_q A s + W_q e (mod q).
+
+## Flyxion Continuation Theorem
+A distinction delta: U -> {0, 1} persists under time evolution T: U -> U if distinguishability boundary partial S is invariant: delta(T(x)) = delta(x), for all x in Supp(partial S).
+
+## Reconstruction Defect Functional
+D(x, y) = inf_{phi} || I(x) - I(phi(y)) ||_H measures invariant loss across degraded state transitions in Hilbert space H.
+
+## MCP Servers & APIs
+- OpenAPI 3.1: https://axiomquant-landing.pages.dev/.well-known/openapi.json
+- MCP Server: https://axiomquant-landing.pages.dev/.well-known/mcp.json
+- Agent Skills: https://axiomquant-landing.pages.dev/.well-known/skills/axiomquant.json
+- QuantReddit API: /api/v1/board/threads, /api/v1/board/thread, /api/v1/board/reply

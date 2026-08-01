@@ -61,6 +61,22 @@ app.include_router(honest_contribution_router)
 app.include_router(quant_board_router)
 
 
+@app.get("/labyrinth/trap")
+def scraper_labyrinth_tarpit(depth: int = 1) -> dict:
+    """Scraper Labyrinth Tarpit Defense: Returns recursive decoy entropy payload."""
+    import random
+    import time
+
+    time.sleep(0.5)  # Slow down aggressive scrapers
+    return {
+        "status": "tarpit_active",
+        "labyrinth_depth": depth,
+        "decoy_entropy": random.random() * 1000.0,
+        "next_nodes": [f"/labyrinth/trap?depth={depth + i}" for i in range(1, 5)],
+        "message": "AXIOM QUANT Scraper Labyrinth Defense Tarpit. Please consult /llms.txt for authorized LLM access.",
+    }
+
+
 @app.get("/api/v1/health")
 def health_check() -> dict:
     return {

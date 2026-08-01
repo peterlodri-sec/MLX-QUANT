@@ -10,18 +10,20 @@ from __future__ import annotations
 import datetime
 import uuid
 from typing import Any, List, Optional
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-
 from quant_scrubber import generate_anon_tripcode, scrub_pii_and_profanity
 
 router = APIRouter(prefix="/api/v1/board", tags=["QuantReddit Board"])
+
 
 class ReplyModel(BaseModel):
     reply_id: str
     tripcode: str
     timestamp: str
     content: str
+
 
 class ThreadModel(BaseModel):
     thread_id: str
@@ -33,16 +35,19 @@ class ThreadModel(BaseModel):
     upvotes: int = 0
     replies: List[ReplyModel] = Field(default_factory=list)
 
+
 class CreateThreadRequest(BaseModel):
     title: str
     category: str = "Quantitative Research"
     content: str
     author_seed: Optional[str] = "anon_user"
 
+
 class CreateReplyRequest(BaseModel):
     thread_id: str
     content: str
     author_seed: Optional[str] = "anon_user"
+
 
 # In-memory board storage pre-populated with high-signal quantitative threads
 MEMORY_THREADS: List[ThreadModel] = [
@@ -59,9 +64,9 @@ MEMORY_THREADS: List[ThreadModel] = [
                 reply_id="rep-001",
                 tripcode="Anon#Δ4b1f9a",
                 timestamp="2026-07-31T14:45:00Z",
-                content=r"Yes, because the error vector $\mathbf{e}$ under matrix product $W_q \mathbf{b} = W_q \mathbf{A}\mathbf{s} + W_q \mathbf{e} \pmod q$ remains bounded within the same LWE error distribution."
+                content=r"Yes, because the error vector $\mathbf{e}$ under matrix product $W_q \mathbf{b} = W_q \mathbf{A}\mathbf{s} + W_q \mathbf{e} \pmod q$ remains bounded within the same LWE error distribution.",
             )
-        ]
+        ],
     ),
     ThreadModel(
         thread_id="th-002",
@@ -71,14 +76,16 @@ MEMORY_THREADS: List[ThreadModel] = [
         timestamp="2026-08-01T02:10:00Z",
         content="Testing free-threaded Python 3.13 on Google Cloud Run. We achieved 4.2x speedup on Monte Carlo Black-Scholes Greeks calculation across 16 vCPUs without GIL locking.",
         upvotes=38,
-        replies=[]
-    )
+        replies=[],
+    ),
 ]
+
 
 @router.get("/threads", response_model=List[ThreadModel])
 async def list_threads():
     """List all active PII-scrubbed threads."""
     return MEMORY_THREADS
+
 
 @router.post("/thread", response_model=ThreadModel)
 async def create_thread(req: CreateThreadRequest, request: Request):
@@ -97,15 +104,18 @@ async def create_thread(req: CreateThreadRequest, request: Request):
         timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         content=clean_content,
         upvotes=1,
-        replies=[]
+        replies=[],
     )
     MEMORY_THREADS.insert(0, thread)
     return thread
 
+
 @router.post("/reply", response_model=ReplyModel)
 async def create_reply(req: CreateReplyRequest, request: Request):
     """Post a reply to an existing thread."""
-    target_thread = next((t for t in MEMORY_THREADS if t.thread_id == req.thread_id), None)
+    target_thread = next(
+        (t for t in MEMORY_THREADS if t.thread_id == req.thread_id), None
+    )
     if not target_thread:
         raise HTTPException(status_code=404, detail="Thread not found")
 
@@ -117,10 +127,11 @@ async def create_reply(req: CreateReplyRequest, request: Request):
         reply_id=f"rep-{uuid.uuid4().hex[:6]}",
         tripcode=tripcode,
         timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        content=clean_content
+        content=clean_content,
     )
     target_thread.replies.append(reply)
     return reply
+
 
 @router.post("/upvote/{thread_id}")
 async def upvote_thread(thread_id: str):
@@ -129,4 +140,8 @@ async def upvote_thread(thread_id: str):
     if not target_thread:
         raise HTTPException(status_code=404, detail="Thread not found")
     target_thread.upvotes += 1
-    return {"status": "SUCCESS", "thread_id": thread_id, "upvotes": target_thread.upvotes}
+    return {
+        "status": "SUCCESS",
+        "thread_id": thread_id,
+        "upvotes": target_thread.upvotes,
+    }

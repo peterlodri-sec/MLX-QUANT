@@ -1,3 +1,32 @@
+# AXIOM QUANT (Δ) ROBOTS & SCRAPER POLICY
+# Compliant LLMs are directed to llms.txt & sitemap.xml
+# Unauthorized scrapers are routed to the Scraper Labyrinth Tarpit (/labyrinth/trap)
+
 User-agent: *
 Allow: /
-Sitemap: https://axiomquant.org/sitemap.xml
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /.well-known/
+Disallow: /labyrinth/trap
+
+# Disallow aggressive commercial scrapers & unauthorized bots
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Anthropic-AI
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+Sitemap: https://axiomquant-landing.pages.dev/sitemap.xml
+LLMs: https://axiomquant-landing.pages.dev/llms.txt

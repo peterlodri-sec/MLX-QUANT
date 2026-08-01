@@ -1,34 +1,28 @@
-# AXIOM QUANT — High-Scale Quantitative Research & Computing Platform
-> Graph-theoretic foundations of quantum calculus, Erdős phase transitions, BitNet b1.58 ternary quantization, Markowitz QP solvers, Black-Scholes Greeks, and Backyard Ultra Loop Engineering.
+# AXIOM QUANT (Δ) — Research Monograph & Agentic Portal
 
-## Core Domain & Repositories
-- Primary Website: https://axiomquant.org/
-- Research Portal: https://axiomquant.org/
-- GitHub Repository: https://github.com/peterlodri-sec/axiomquant.org
-- Cloud Provider: Google Cloud Platform (Project: `axiomquant`)
-- Serverless API Engine: https://axiomquant.org/api/v1/adk/agent
+> AXIOM QUANT is an open access quantitative research platform publishing 19 monograph chapters, 8 mathematical appendices (A–H), self-hosted MathJax WebAssembly acceleration engines, and GCP ADK multi-agent pipelines.
 
-## Research Monograph Papers (12 Volumes)
-- Chapter 01 (Concept Map): https://axiomquant.org/#concept-map — Five Threshold Domains & Mathematical Isomorphism
-- Chapter 08 (Backyard Ultra): https://axiomquant.org/#backyard-ultra — Loop Engineering, LLMs, Agents, Skills & MCPs
-- Lap 03 (Universal Kernel): https://axiomquant.org/#lap3-universal-kernel — Universal Threshold Kernel K(u) = sin(πu)/(πu) & Axiom Quant Thesis
-- Lap 02 (Tracy-Widom & SLE): https://axiomquant.org/#lap2-tracy-widom — Painlevé II Transcendent & Third-Order Phase Transitions
-- Lap 04 (Zeta-GFF Blueprint): https://axiomquant.org/#lap4-zeta-gff — Log-Correlated Fields & Gaussian Free Fields
-- Laps 05-08 Synthesis: https://axiomquant.org/#laps-5-8-synthesis — Spectral Rigidity, Quantum Unique Ergodicity & Quantum Chaos
-- Chapter 02 (The Ultramarathon): https://axiomquant.org/#ultramarathon — Riemann Zeta Zeros, Wigner Semicircle & Ising Max-Cut
-- Chapter 03 (Dyadic-Ternary Bridge): https://axiomquant.org/#dyadic-ternary — Cycle Rank β1 & BitNet b1.58 Ternary Quantization
-- Chapter 04 (Microstructure & Chaos): https://axiomquant.org/#microstructure-chaos — VPIN Toxicity & Almgren-Chriss Optimal Execution
-- Chapter 05 (Transfer Operator): https://axiomquant.org/#transfer-operator — Frobenius-Perron Spectrum & Cantor Devil's Staircase
-- Chapter 06 (Black-Scholes Greeks): https://axiomquant.org/#black-scholes — Geometric Brownian Motion & Analytical Sensitivities
-- Bibliography: https://axiomquant.org/#bibliography — Curated Catalog of Foundational Literature
+## Core Monograph Chapters
+- [Chapter 01: Concept Map & The Five Threshold Domains](https://axiomquant-landing.pages.dev/#concept-map): Erdős-Rényi phase transitions, BitNet b1.58 ternary quantization, and GCP ADK reasoning pipelines.
+- [Chapter 02: The Ultramarathon of Quantitative Research](https://axiomquant-landing.pages.dev/#ultramarathon): 4.167-mile loop engineering, continuous evaluation, and resilience.
+- [Chapter 03: Dyadic-Ternary Bridge](https://axiomquant-landing.pages.dev/#dyadic-ternary): Binary vs ternary representations and post-quantum noise equivalence.
+- [Chapter 04: Microstructure & Chaos](https://axiomquant-landing.pages.dev/#microstructure-chaos): High-frequency limit order books, Hawkes processes, and spectral rigidity.
+- [Chapter 05: Transfer Operator & Spectral Gap](https://axiomquant-landing.pages.dev/#transfer-operator): Perron-Frobenius operators and chaos bounds.
+- [Flyxion Monograph: Admissible Continuation](https://axiomquant-landing.pages.dev/#admissible-continuation): Geometry of persistence, boundary preservation, and Reconstruction Defect functional D(x, y).
+- [Flyxion Monograph: Autonomous Cognitive Domains](https://axiomquant-landing.pages.dev/#autonomous-systems): Recursive homeostasis, repair operators, and distributed multi-agent coupling.
+- [Flyxion Master Monograph: The Mathematics of Autonomous Systems](https://axiomquant-landing.pages.dev/#autonomous-systems-full): Complete 15-chapter mathematical formalism.
 
-## API Endpoints
-- GCP ADK Multi-Agent Reasoning: GET /api/v1/adk/agent?query={query}
-- Markowitz Convex QP Solver: GET /api/v1/markowitz?universe={BigTech|Finance|Crypto}
-- Black-Scholes Greeks Engine: GET /api/v1/black-scholes?S=100&K=105&T=0.5&r=0.05&vol=0.20
-- Platform Health Check: GET /api/v1/health
+## Mathematical Appendices (A–H)
+- [Appendix A: Topological Continuation Posets](https://axiomquant-landing.pages.dev/#media-quines-appendices): Posets & Path Concatenation Lemma.
+- [Appendix B: Banach Contraction Theorem for Media Quines](https://axiomquant-landing.pages.dev/#media-quines-appendices): Perturbative stability.
+- [Appendix C: Non-subadditive Latent Entropy Discrepancy](https://axiomquant-landing.pages.dev/#media-quines-appendices): Information loss.
+- [Appendix D: Category-Theoretic Framework](https://axiomquant-landing.pages.dev/#media-quines-appendices): Natural adjunction F ⊣ G.
+- [Appendix E: Spherepop Algebra](https://axiomquant-landing.pages.dev/#media-quines-appendices): Operational primitives & tensor splitting.
+- [Appendix F & G: Dynamical Systems & Data Processing Inequality](https://axiomquant-landing.pages.dev/#media-quines-appendices): Lyapunov exponents.
+- [Appendix H: Quantum BitNet & Post-Quantum LWE Equivalence](https://axiomquant-landing.pages.dev/#media-quines-appendices): Isomorphism between ternary weights and discrete Gaussian LWE noise.
 
-## Key Mathematical Theorems
-1. **The Axiom Quant Thesis**: Every phase transition in a complex system has a self-adjoint transfer operator L with largest eigenvalue λ0 = 1, where spectral gap closure 1 - λ1 = 0 triggers the phase transition.
-2. **Cycle Rank β1 Realizability**: On context transition graphs G=(V,E), β1 = |E| - |V| + k determines amplitude field extensions: β1=0 forces ℝ, β1=1 forces ℂ (via K3 triangle witness), and β1≥2 forces ℍ or 𝕆.
-3. **Universal Threshold Kernel**: K(u) = sin(πu)/(πu) governs zero spacings, level repulsion, and Nyquist threshold limits across physics and quantitative finance.
+## Community & APIs
+- [QuantReddit / QuantChan Board](https://axiomquant-landing.pages.dev/#quantreddit): PII-scrubbed anonymous discussion board with SHA-256 tripcodes.
+- [OpenAPI 3.1 Specification](https://axiomquant-landing.pages.dev/.well-known/openapi.json): Full REST API specification.
+- [MathJax Wasm Engine](https://peterl.dev/mathjax-wasm/): Self-hosted WebAssembly LaTeX renderer.
+- [Org & Repo ASCII Map](https://peterl.dev/org-map/): 100% 7-bit ASCII repository mapping.

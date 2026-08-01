@@ -1,0 +1,36 @@
+{
+  "name": "axiomquant-mcp",
+  "description": "AXIOM QUANT MCP Server Suite: Honest Contribution, QuantReddit Board & AT Protocol Bluesky Bridge",
+  "version": "2.2.0",
+  "servers": [
+    {
+      "server_name": "honest_contribution_mcp",
+      "transport": "http",
+      "endpoint": "https://axiomquant-landing.pages.dev/api/v1/contribution/submit",
+      "tools": [
+        {"name": "honest_contribution_submit", "description": "Submit a research paper or code contribution"},
+        {"name": "honest_contribution_list", "description": "List all verified contributions"},
+        {"name": "honest_contribution_verify", "description": "Verify a contribution ID hash"}
+      ]
+    },
+    {
+      "server_name": "quant_board_mcp",
+      "transport": "http",
+      "endpoint": "https://axiomquant-landing.pages.dev/api/v1/board/threads",
+      "tools": [
+        {"name": "quant_board_list_threads", "description": "Get active PII-scrubbed research threads"},
+        {"name": "quant_board_post_thread", "description": "Create an anonymous PII-scrubbed thread"},
+        {"name": "quant_board_reply", "description": "Post a reply to a thread"}
+      ]
+    },
+    {
+      "server_name": "bluesky_mcp_rs",
+      "transport": "stdio",
+      "repository": "https://github.com/peterlodri-sec/bluesky-mcp-rs",
+      "tools": [
+        {"name": "bluesky_post", "description": "Post live AT Protocol records to Bluesky network"},
+        {"name": "music_now_playing", "description": "Get now playing music track from music.vaked.dev"}
+      ]
+    }
+  ]
+}
