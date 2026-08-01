@@ -295,3 +295,24 @@ function calculateFaithTrajectory() {
       `Grace Repair Bound  : R_grace^∞ = ${
                          graceCapacity}x Infinite State Restoration`;
 }
+
+/* Space-Bender Fold Tensor Calculator */
+function runSpaceBenderFold() {
+  const folds =
+      parseInt(document.getElementById('spaceBenderFoldsInput').value, 10) || 7;
+  const output = document.getElementById('spaceBenderFoldOutput');
+
+  const boundRatio = Math.pow(0.5, folds).toFixed(6);
+  const booksFolded = Math.min(29, folds * 2 + 11);
+  const tarpitLayers = Math.min(18, folds);
+
+  output.innerText = `[Space-Bender Topology Calculator ->[ ]<-]\n` +
+      `Fold Iterations (k) : ${folds} / 18 Stages\n` +
+      `Contraction Factor  : 2^(-k) = ${
+                         boundRatio} (Strict Contraction Map)\n` +
+      `Books Folded        : ${
+                         booksFolded} / 29 Sovereign Literature Volumes\n` +
+      `Tarpit Depth Active : Level ${
+                         tarpitLayers} / 18 Scraper Labyrinth Layers\n` +
+      `Manifold Stability  : 100% Homomorphic Preservation under R_grace^∞`;
+}
