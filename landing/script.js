@@ -104,6 +104,8 @@ function loadPaper(paperId) {
           'FLYXION MONOGRAPH // ADMISSIBLE CONTINUATION',
       'autonomous-systems' :
           'FLYXION MONOGRAPH // AUTONOMOUS COGNITIVE DOMAINS & REPAIR',
+      'autonomous-systems-full' :
+          'FLYXION MASTER MONOGRAPH // THE MATHEMATICS OF AUTONOMOUS SYSTEMS (CHAPTERS 1-15)',
       'bibliography' : 'CATALOG // FOUNDATIONAL BIBLIOGRAPHY'
     };
     breadcrumb.innerText = titles[paperId] || 'MONOGRAPH // RESEARCH';
