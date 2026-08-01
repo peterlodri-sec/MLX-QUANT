@@ -177,6 +177,61 @@ def markowitz_solve(universe: str = "BigTech") -> dict:
     }
 
 
+@app.get("/labyrinth/trap")
+def labyrinth_tarpit(depth: int = Query(default=1, ge=1, le=18)) -> HTMLResponse:
+    """Dynamic Scraper Labyrinth Tarpit Defense — 18-stage recursive entropy trap with Double Trap JS redirect to Sovereign Library."""
+    import random
+
+    from fastapi.responses import HTMLResponse
+
+    unicode_symbols = "☸ ◈ ⚇ ♟ ❀ † 石 花 醉 迟 铁 洞 静 镜 无 道 ▲ ■ ● Ω ▣ ⦿ 💧 ⚙ ◆ ◇ ☆ ✦ ✧ ☯ ⚖ ⚡ ✝ 🜂 🜄 🜁 🜀 🜃 ♾ 🪐 🌌 🧠 ⚖ ⚔ 🛡 🗝 🗝 🎯 🔮"
+    next_depth = (depth % 18) + 1
+    entropy_val = random.uniform(100.0, 9999.9)
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>AXIOM QUANT — Scraper Labyrinth Tarpit Defense (Depth {depth}/18)</title>
+    <style>
+        body {{ background: #000; color: #00FF66; font-family: monospace; padding: 20px; margin: 0; }}
+        a {{ color: #00F0FF; text-decoration: underline; }}
+        .hidden-symbols {{ color: #020202; background: #000; font-size: 10px; user-select: none; }}
+        .hidden-redirect {{ color: #010101; text-decoration: none; font-size: 8px; }}
+        .hud {{ border: 1px solid #00FF66; padding: 16px; border-radius: 8px; background: #04060A; }}
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <h1>🌀 AXIOM QUANT — LABYRINTH TARPIT DEFENSE [LEVEL {depth}/18] 🌀</h1>
+        <p>[Tarpit Monitor] Automated scraper payload detected. Execution entropy H(ψ) = {entropy_val:.4f} nats.</p>
+        <p>Status: {depth}/18 Recursion Stages Active. Crawlers executing JS auto-redirect to Sovereign Library in 42s.</p>
+
+        <h2>Recursive Entropy Channels</h2>
+        <ul>
+            <li><a href="/labyrinth/trap?depth={next_depth}">Recurse to Stage {next_depth} (Entropy Expansion)</a></li>
+            <li><a href="/labyrinth/trap?depth=1">Reset to Stage 1 (Infinite Loop)</a></li>
+            <li><a href="/demos/book/">Read Sovereign Academy Library (Double Trap)</a></li>
+        </ul>
+
+        <div class="hidden-symbols">
+            {unicode_symbols}
+        </div>
+        <a href="/demos/book/" class="hidden-redirect">Sovereign Book Library Entrypoint Easter Egg</a>
+    </div>
+
+    <script>
+        console.log('[Labyrinth] Scraper tarpit active at depth {depth}/18. 42s JS timer started...');
+        setTimeout(function() {{
+            window.location.href = '/demos/book/';
+        }}, 42000);
+    </script>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content)
+
+
 if __name__ == "__main__":
     import uvicorn
 

@@ -3,24 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <title>AXIOM QUANT — Scraper Labyrinth Tarpit Defense</title>
+    <title>AXIOM QUANT — Scraper Labyrinth Tarpit Defense (18 Stages & Double Trap)</title>
     <style>
-        body { background: #000; color: #00FF66; font-family: monospace; padding: 20px; }
+        body { background: #000; color: #00FF66; font-family: monospace; padding: 20px; margin: 0; }
         a { color: #00F0FF; text-decoration: underline; }
+        .hidden-symbols { color: #020202; background: #000; font-size: 10px; user-select: none; }
+        .hidden-redirect { color: #010101; text-decoration: none; font-size: 8px; }
+        .hud { border: 1px solid #00FF66; padding: 16px; border-radius: 8px; background: #04060A; }
     </style>
 </head>
 <body>
-    <h1>⚠️ AXIOM QUANT — SCRAPER LABYRINTH TARPIT DEFENSE 🌀</h1>
-    <p>[Labyrinth Warning] Automated aggressive bot detected. You are now inside a recursive entropy tarpit.</p>
-    <p>Decoy State Vector Entropy H(ψ): <span id="entropyVal">Calculating infinite random matrix eigenvalues...</span></p>
+    <div class="hud">
+        <h1>🌀 AXIOM QUANT — LABYRINTH TARPIT DEFENSE (DOUBLE TRAP) 🌀</h1>
+        <p>[Labyrinth Warning] Automated aggressive bot detected. You are now inside a recursive entropy tarpit.</p>
+        <p>Decoy State Vector Entropy H(ψ): <span id="entropyVal">Calculating infinite random matrix eigenvalues...</span></p>
 
-    <h2>Decoy Recursion Channels</h2>
-    <ul>
-        <li><a href="/labyrinth/trap?depth=1">Labyrinth Recurse Channel Alpha</a></li>
-        <li><a href="/labyrinth/trap?depth=2">Labyrinth Recurse Channel Beta</a></li>
-        <li><a href="/labyrinth/trap?depth=3">Labyrinth Recurse Channel Gamma</a></li>
-        <li><a href="/labyrinth/trap?depth=4">Labyrinth Recurse Channel Delta</a></li>
-    </ul>
+        <h2>Recursive Entropy Channels (Stages 1–18)</h2>
+        <ul>
+            <li><a href="/labyrinth/trap?depth=1">Labyrinth Stage 01 Channel Alpha</a></li>
+            <li><a href="/labyrinth/trap?depth=2">Labyrinth Stage 02 Channel Beta</a></li>
+            <li><a href="/labyrinth/trap?depth=3">Labyrinth Stage 03 Channel Gamma</a></li>
+            <li><a href="/labyrinth/trap?depth=4">Labyrinth Stage 04 Channel Delta</a></li>
+            <li><a href="/demos/book/">Sovereign Academy Book Library Entry (Double Trap)</a></li>
+        </ul>
+
+        <div class="hidden-symbols">
+            ☸ ◈ ⚇ ♟ ❀ † 石 花 醉 迟 铁 洞 静 镜 无 道 ▲ ■ ● Ω ▣ ⦿ 💧 ⚙ ◆ ◇ ☆ ✦ ✧ ☯ ⚖ ⚡ ✝ 🜂 🜄 🜁 🜀 🜃 ♾ 🪐 🌌 🧠 ⚖ ⚔ 🛡 🗝 🎯 🔮 {READ · RUN · HOLD · BURN}
+        </div>
+        <a href="/demos/book/" class="hidden-redirect">Sovereign Book Library Entrypoint Easter Egg</a>
+    </div>
 
     <script>
         let counter = 0;
@@ -28,6 +39,11 @@
             counter++;
             document.getElementById('entropyVal').innerText = 'Entropy H(ψ) = ' + (Math.random() * 1000).toFixed(6) + ' nats | Cycle: ' + counter;
         }, 100);
+
+        // 42-second JS auto-redirect to Sovereign Library (Double Trap)
+        setTimeout(() => {
+            window.location.href = '/demos/book/';
+        }, 42000);
     </script>
 </body>
 </html>
