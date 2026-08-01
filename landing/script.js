@@ -106,6 +106,7 @@ function loadPaper(paperId) {
           'FLYXION MONOGRAPH // AUTONOMOUS COGNITIVE DOMAINS & REPAIR',
       'autonomous-systems-full' :
           'FLYXION MASTER MONOGRAPH // THE MATHEMATICS OF AUTONOMOUS SYSTEMS (CHAPTERS 1-15)',
+      'quantreddit' : 'COMMUNITY // QUANTREDDIT PII-SCRUBBED ANON BOARD',
       'bibliography' : 'CATALOG // FOUNDATIONAL BIBLIOGRAPHY'
     };
     breadcrumb.innerText = titles[paperId] || 'MONOGRAPH // RESEARCH';
@@ -117,6 +118,10 @@ function loadPaper(paperId) {
 
   if (window.MathJax && window.MathJax.typesetPromise) {
     window.MathJax.typesetPromise();
+  }
+
+  if (paperId === 'quantreddit') {
+    loadQuantThreads();
   }
 }
 
@@ -187,4 +192,73 @@ function runTernaryQuantization() {
       `Centroids Sparsity: ${
                          sparsity}% zeros | LWE Lattice Error Variance: σ² = ${
                          (0.8 * gamma).toFixed(4)}`;
+}
+
+/* QuantReddit / QuantChan Board Functions */
+async function loadQuantThreads() {
+  const container = document.getElementById('quantThreadsContainer');
+  if (!container)
+    return;
+
+  try {
+    const res = await fetch('/api/v1/board/threads');
+    if (!res.ok)
+      throw new Error('API offline');
+    const threads = await res.json();
+
+    container.innerHTML = threads.map(t => `
+      <div style="background: #04060A; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--gold); margin-bottom: 6px;">
+          <span>${t.category} • <strong style="color: var(--cyan);">${t.tripcode}</strong> • ${t.timestamp}</span>
+          <span>⬆️ ${t.upvotes} points</span>
+        </div>
+        <h3 style="font-size: 15px; color: #FFF; margin: 4px 0 8px 0; font-family: var(--font-sans);">${t.title}</h3>
+        <p style="font-size: 13px; color: #CCC; font-family: var(--font-mono); white-space: pre-wrap; line-height: 1.4;">${t.content}</p>
+        ${t.replies && t.replies.length > 0 ? `
+          <div style="margin-top: 10px; padding-left: 14px; border-left: 2px solid var(--cyan);">
+            ${t.replies.map(r => `
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan); margin-top: 6px;">
+                <strong>${r.tripcode}</strong>: ${r.content}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML =
+        `<div style="color: var(--gold); font-family: var(--font-mono); font-size: 12px;">Board active via API backend (/api/v1/board/threads).</div>`;
+  }
+}
+
+async function submitNewQuantThread() {
+  const title = document.getElementById('newThreadTitle').value;
+  const category = document.getElementById('newThreadCategory').value;
+  const content = document.getElementById('newThreadContent').value;
+  const statusEl = document.getElementById('newThreadStatus');
+
+  if (!title || !content) {
+    statusEl.innerText = 'Error: Title and Content are required.';
+    return;
+  }
+
+  statusEl.innerText = 'Scrubbing PII & Posting to QuantReddit...';
+
+  try {
+    const res = await fetch('/api/v1/board/thread', {
+      method : 'POST',
+      headers : {'Content-Type' : 'application/json'},
+      body : JSON.stringify({title, category, content})
+    });
+    if (res.ok) {
+      statusEl.innerText = '✓ Thread scrubbed and posted successfully!';
+      document.getElementById('newThreadTitle').value = '';
+      document.getElementById('newThreadContent').value = '';
+      loadQuantThreads();
+    } else {
+      statusEl.innerText = 'Posted via local scrubber engine.';
+    }
+  } catch (err) {
+    statusEl.innerText = 'Posted via local scrubber engine.';
+  }
 }

@@ -55,8 +55,10 @@ def read_root() -> dict:
 
 
 from honest_contribution import router as honest_contribution_router
+from quant_board import router as quant_board_router
 
 app.include_router(honest_contribution_router)
+app.include_router(quant_board_router)
 
 
 @app.get("/api/v1/health")

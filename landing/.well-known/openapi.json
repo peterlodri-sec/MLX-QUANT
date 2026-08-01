@@ -172,6 +172,157 @@
         }
       }
     },
+    "/api/v1/board/threads": {
+      "get": {
+        "tags": [
+          "QuantReddit Board"
+        ],
+        "summary": "List Threads",
+        "description": "List all active PII-scrubbed threads.",
+        "operationId": "list_threads_api_v1_board_threads_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ThreadModel"
+                  },
+                  "type": "array",
+                  "title": "Response List Threads Api V1 Board Threads Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/board/thread": {
+      "post": {
+        "tags": [
+          "QuantReddit Board"
+        ],
+        "summary": "Create Thread",
+        "description": "Create a new anonymous PII-scrubbed thread.",
+        "operationId": "create_thread_api_v1_board_thread_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/board/reply": {
+      "post": {
+        "tags": [
+          "QuantReddit Board"
+        ],
+        "summary": "Create Reply",
+        "description": "Post a reply to an existing thread.",
+        "operationId": "create_reply_api_v1_board_reply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/board/upvote/{thread_id}": {
+      "post": {
+        "tags": [
+          "QuantReddit Board"
+        ],
+        "summary": "Upvote Thread",
+        "description": "Upvote a thread score.",
+        "operationId": "upvote_thread_api_v1_board_upvote__thread_id__post",
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Thread Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health Check",
@@ -587,6 +738,71 @@
         ],
         "title": "ContributionSubmission"
       },
+      "CreateReplyRequest": {
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "author_seed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Seed",
+            "default": "anon_user"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thread_id",
+          "content"
+        ],
+        "title": "CreateReplyRequest"
+      },
+      "CreateThreadRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "Quantitative Research"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "author_seed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Seed",
+            "default": "anon_user"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "title": "CreateThreadRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -599,6 +815,84 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ReplyModel": {
+        "properties": {
+          "reply_id": {
+            "type": "string",
+            "title": "Reply Id"
+          },
+          "tripcode": {
+            "type": "string",
+            "title": "Tripcode"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reply_id",
+          "tripcode",
+          "timestamp",
+          "content"
+        ],
+        "title": "ReplyModel"
+      },
+      "ThreadModel": {
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "tripcode": {
+            "type": "string",
+            "title": "Tripcode"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "upvotes": {
+            "type": "integer",
+            "title": "Upvotes",
+            "default": 0
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/ReplyModel"
+            },
+            "type": "array",
+            "title": "Replies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thread_id",
+          "title",
+          "category",
+          "tripcode",
+          "timestamp",
+          "content"
+        ],
+        "title": "ThreadModel"
       },
       "ValidationError": {
         "properties": {

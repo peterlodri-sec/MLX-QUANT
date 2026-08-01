@@ -377,6 +377,13 @@
                             <span class="p-sub">Flyxion Master Monograph (15 Ch)</span>
                         </div>
                     </li>
+                    <li class="paper-nav-item" data-paper="quantreddit" onclick="loadPaper('quantreddit')">
+                        <span class="paper-icon">💬</span>
+                        <div class="paper-info">
+                            <span class="p-title">QuantReddit / QuantChan</span>
+                            <span class="p-sub">Anon PII-Scrubbed Board</span>
+                        </div>
+                    </li>
                     <li class="paper-nav-item" data-paper="bibliography" onclick="loadPaper('bibliography')">
                         <span class="paper-icon">📚</span>
                         <div class="paper-info">
@@ -848,8 +855,44 @@ Turn 01 ───► Prompt / Tool   ───► Observation     ───► T
                     <h2 class="section-title">2. Structural Entropy &amp; Repair Contraction</h2>
                     <p>Home is an attractor basin $\mathcal{H}_0 \subset \mathcal{S}$ where repair operator $\mathcal{R}$ acts as a strict contraction map on defect space $(\mathcal{S}, d_{\mathcal{D}})$.</p>
 
-                    <h2 class="section-title">3. Category $\mathbf{AutSys}$ &amp; Scientific Discovery</h2>
-                    <p>Scientific discovery is formulated as geodesics on theory manifold $\mathcal{M}_{\mathrm{theory}}$ driven by representation defect gradient descent $\frac{d}{dt} \Theta(t) = -\nabla_{\Theta} \mathcal{D}_{\mathrm{rep}}(\Theta(t))$.</p>
+                <!-- QUANTREDDIT / QUANTCHAN ANON BOARD -->
+                <div class="paper-content" id="paper-quantreddit">
+                    <div class="article-meta">
+                        <span class="meta-tag gold">COMMUNITY BOARD</span>
+                        <span class="meta-tag cyan">PII-SCRUBBED // ANON TRIPCODES</span>
+                        <span class="meta-date">JULY 2026</span>
+                    </div>
+
+                    <h1 class="article-title">QuantReddit / QuantChan: Anonymous High-Signal Research Board</h1>
+                    <div class="byline">Cryptographically Hashed Anon Tripcodes (Anon#ΔXXXX) • Zero PII • Zero Profanity</div>
+
+                    <p class="lead-text">
+                        A clean, anonymous, PII-quant-scrubbed discussion board dedicated to high-signal quantitative finance, category theory, quantum computing, and autonomous AI agents. All submissions pass through automated SHA-256 tripcode generation and regex PII/profanity filters.
+                    </p>
+
+                    <!-- New Thread Form -->
+                    <div style="background: #04060A; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="font-family: var(--font-sans); color: var(--gold); margin-top: 0;">Start Anonymous Thread</h3>
+                        <div style="display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <input type="text" id="newThreadTitle" placeholder="Thread Title (e.g. BitNet b1.58 LWE Equivalence)" style="flex: 2; background: #0D1117; border: 1px solid var(--border-color); color: #FFF; padding: 8px; font-family: var(--font-mono); border-radius: 4px; min-width: 200px;" />
+                            <select id="newThreadCategory" style="flex: 1; background: #0D1117; border: 1px solid var(--border-color); color: var(--cyan); padding: 8px; font-family: var(--font-mono); border-radius: 4px; min-width: 160px;">
+                                <option>Quantitative Research</option>
+                                <option>Quantum &amp; Lattice Cryptography</option>
+                                <option>High Performance Computing</option>
+                                <option>Stochastic Calculus &amp; Greeks</option>
+                                <option>Autonomous Agent Systems</option>
+                            </select>
+                        </div>
+                        <textarea id="newThreadContent" rows="3" placeholder="Thread body / LaTeX equations / discussion prompt (PII &amp; profanity automatically scrubbed)..." style="width: 100%; background: #0D1117; border: 1px solid var(--border-color); color: #FFF; padding: 8px; font-family: var(--font-mono); border-radius: 4px; margin-bottom: 10px; box-sizing: border-box;"></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <button onclick="submitNewQuantThread()" style="background: var(--cyan); color: #000; border: none; padding: 8px 18px; font-family: var(--font-mono); font-weight: bold; border-radius: 4px; cursor: pointer;">POST ANONYMOUS THREAD 💬</button>
+                            <span id="newThreadStatus" style="font-family: var(--font-mono); font-size: 12px; color: var(--gold);"></span>
+                        </div>
+                    </div>
+
+                    <!-- Active Threads Container -->
+                    <h2 class="section-title">Active Scrubbed Research Threads</h2>
+                    <div id="quantThreadsContainer">Loading QuantReddit threads...</div>
                 </div>
 
                 <!-- PAPER 7: BIBLIOGRAPHY -->
