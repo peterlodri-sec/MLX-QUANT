@@ -893,6 +893,19 @@ Turn 01 ───► Prompt / Tool   ───► Observation     ───► T
 
                     <h2 class="section-title">3. "Lord, how many times shall I forgive my brother?" (Matt 18:21)</h2>
                     <p>Jesus answers: <em>"Seventy-seven times."</em> Stepping out of fear of exposure means reflecting the infinite state-restoration capacity of the Creator ($\mathcal{R}_{\mathrm{grace}}^{\infty}$).</p>
+
+                    <h2 class="section-title">4. Interactive Faith vs Fear Geodesic Calculator</h2>
+                    <p>Calculate your state space trajectory along the continuation geodesic given Faith parameter $\lambda$ vs Fear parameter $\theta$:</p>
+                    <div style="background: #04060A; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                            <label style="font-family: var(--font-mono); font-size: 12px; color: var(--gold);">Faith ($\lambda$):</label>
+                            <input type="number" id="faithInput" value="9.5" step="0.5" min="0.1" max="10.0" style="background: #0D1117; border: 1px solid var(--border-color); color: var(--cyan); padding: 4px 8px; font-family: var(--font-mono); border-radius: 4px; width: 60px;" />
+                            <label style="font-family: var(--font-mono); font-size: 12px; color: var(--gold);">Fear ($\theta$):</label>
+                            <input type="number" id="fearInput" value="1.2" step="0.1" min="0.1" max="10.0" style="background: #0D1117; border: 1px solid var(--border-color); color: #FF0055; padding: 4px 8px; font-family: var(--font-mono); border-radius: 4px; width: 60px;" />
+                            <button onclick="calculateFaithTrajectory()" style="background: var(--gold); color: #000; border: none; padding: 6px 14px; font-family: var(--font-mono); font-weight: bold; border-radius: 4px; cursor: pointer;">COMPUTE GEODESIC ✝️</button>
+                        </div>
+                        <div id="faithGeodesicOutput" style="background: #000; border: 1px solid rgba(255, 215, 0, 0.3); padding: 12px; font-family: var(--font-mono); font-size: 12px; color: #FFFF00; border-radius: 6px; white-space: pre-wrap;">Click "COMPUTE GEODESIC" to calculate Continuation Ratio λ / θ...</div>
+                    </div>
                 </div>
 
                 <!-- QUANTREDDIT / QUANTCHAN ANON BOARD -->

@@ -264,3 +264,26 @@ async function submitNewQuantThread() {
     statusEl.innerText = 'Posted via local scrubber engine.';
   }
 }
+
+/* Faith vs Fear Geodesic Trajectory Calculator */
+function calculateFaithTrajectory() {
+  const faith = parseFloat(document.getElementById('faithInput').value) || 1.0;
+  const fear = parseFloat(document.getElementById('fearInput').value) || 1.0;
+  const output = document.getElementById('faithGeodesicOutput');
+
+  const ratio = (faith / (fear || 0.001)).toFixed(4);
+  const continuationStatus = (faith > fear * 2)
+      ? 'ADMISSIBLE CONTINUATION (Walking on Water 🌊)'
+      : (faith >= fear) ? 'STABLE RECOVERY BASIN (Calling "Lord, Save Me!")'
+                        : 'SINKING CONDITION (Distracted by Wind)';
+
+  const graceCapacity = (77 * 7);
+
+  output.innerText = `[Axiom Quant Geodesic Trajectory Calculator]\n` +
+      `Faith Parameter (λ) : ${faith.toFixed(2)}\n` +
+      `Fear Parameter  (θ) : ${fear.toFixed(2)}\n` +
+      `Continuation Ratio  : λ / θ = ${ratio}\n` +
+      `Trajectory Status   : ${continuationStatus}\n` +
+      `Grace Repair Bound  : R_grace^∞ = ${
+                         graceCapacity}x Infinite State Restoration`;
+}
