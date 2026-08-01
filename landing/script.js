@@ -106,6 +106,8 @@ function loadPaper(paperId) {
           'FLYXION MONOGRAPH // AUTONOMOUS COGNITIVE DOMAINS & REPAIR',
       'autonomous-systems-full' :
           'FLYXION MASTER MONOGRAPH // THE MATHEMATICS OF AUTONOMOUS SYSTEMS (CHAPTERS 1-15)',
+      'three-questions-of-peter' :
+          'PHILOSOPHICAL MONOGRAPH // THE THREE QUESTIONS OF PETER: FAITH & GRACE',
       'quantreddit' : 'COMMUNITY // QUANTREDDIT PII-SCRUBBED ANON BOARD',
       'bibliography' : 'CATALOG // FOUNDATIONAL BIBLIOGRAPHY'
     };
