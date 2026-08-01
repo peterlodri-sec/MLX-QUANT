@@ -100,6 +100,10 @@ function loadPaper(paperId) {
           'SECURITY // GOOGLE PQC STANDARDS & NIST FIPS 203/204/205',
       'media-quines-appendices' :
           'MONOGRAPH // APPENDICES // A-G & BIBLIOGRAPHY',
+      'admissible-continuation' :
+          'FLYXION MONOGRAPH // ADMISSIBLE CONTINUATION',
+      'autonomous-systems' :
+          'FLYXION MONOGRAPH // AUTONOMOUS COGNITIVE DOMAINS & REPAIR',
       'bibliography' : 'CATALOG // FOUNDATIONAL BIBLIOGRAPHY'
     };
     breadcrumb.innerText = titles[paperId] || 'MONOGRAPH // RESEARCH';
