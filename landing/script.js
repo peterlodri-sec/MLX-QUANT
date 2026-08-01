@@ -16,28 +16,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* 1. INITIALIZE WEB WORKER */
 function initWebWorker() {
-  if (window.Worker) {
-    computeWorker = new Worker('/worker.js');
+  if (window.Worker && window.location.protocol !== 'file:') {
+    try {
+      computeWorker = new Worker('./worker.js');
 
-    computeWorker.onmessage = function(e) {
-      const {type, payload} = e.data;
+      computeWorker.onmessage = function(e) {
+        const {type, payload} = e.data;
 
-      if (type === 'GBM_RESULTS') {
-        console.log('[Worker] Monte Carlo GBM simulation complete:', payload);
-      } else if (type === 'VPIN_RESULTS') {
-        console.log('[Worker] VPIN Toxicity calculation complete:', payload);
-      } else if (type === 'ERDOS_RESULTS') {
-        console.log('[Worker] Erdős graph sampling complete:', payload);
-      }
-    };
+        if (type === 'GBM_RESULTS') {
+          console.log('[Worker] Monte Carlo GBM simulation complete:', payload);
+        } else if (type === 'VPIN_RESULTS') {
+          console.log('[Worker] VPIN Toxicity calculation complete:', payload);
+        } else if (type === 'ERDOS_RESULTS') {
+          console.log('[Worker] Erdős graph sampling complete:', payload);
+        }
+      };
 
-    // Dispatch background warmup calculation
-    computeWorker.postMessage({
-      type : 'SIMULATE_GBM',
-      payload : {S : 100, vol : 0.2, r : 0.05, T : 1, numPaths : 1000}
-    });
-    computeWorker.postMessage(
-        {type : 'SIMULATE_ERDOS_GRAPH', payload : {n : 100, p : 0.02}});
+      // Dispatch background warmup calculation
+      computeWorker.postMessage({
+        type : 'SIMULATE_GBM',
+        payload : {S : 100, vol : 0.2, r : 0.05, T : 1, numPaths : 1000}
+      });
+      computeWorker.postMessage(
+          {type : 'SIMULATE_ERDOS_GRAPH', payload : {n : 100, p : 0.02}});
+    } catch (err) {
+      console.warn(
+          '[AxiomQuant] Web Worker initialization failed:', err.message);
+    }
+  } else {
+    console.log(
+        '[AxiomQuant] Web Worker disabled or unsupported under local file:// protocol.');
   }
 }
 
