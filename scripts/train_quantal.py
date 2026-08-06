@@ -169,9 +169,10 @@ def export_to_ayeos(
             codes, scales = mx.quantize(
                 wq, group_size=group_size, bits=2, mode="ternary"
             )
-            codes_flat = np.array(codes.reshape(-1), dtype=np.uint8)
-            codes_list = codes_flat.tolist()
-            scales_flat = np.array(scales.reshape(-1), dtype=np.float32).tolist()
+            # MLX arrays -> plain lists via .tolist() (numpy can't take the
+            # byte-packed arrays directly — item-size mismatch)
+            codes_list = codes.reshape(-1).tolist()
+            scales_flat = scales.reshape(-1).tolist()
 
             entry = {
                 "name": path,
