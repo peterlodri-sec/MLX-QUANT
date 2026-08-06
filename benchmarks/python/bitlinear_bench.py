@@ -1,16 +1,26 @@
 # Copyright © 2026 8b-is
 
 import argparse
+import sys
+from pathlib import Path
 
 import mlx.core as mx
 import mlx.nn as nn
 from mlx.nn.layers.bitlinear import BitLinear
 from time_utils import time_fn
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+try:
+    from langfuse_callback import langfuse_trace_benchmark
+except ImportError:
+    def langfuse_trace_benchmark(fn):
+        return fn
+
 B = 32
 T = 256
 
 
+@langfuse_trace_benchmark
 def time_bitlinear(dim):
     mx.random.seed(3)
     x = mx.random.normal((B, T, dim))
