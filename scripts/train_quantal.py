@@ -45,24 +45,15 @@ def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
     :meth:`mlx.nn.Module.update_modules` for a single-pass replacement.
     """
 
-    def _build_path(path: str, new_module: nn.Module) -> dict:
+    def _swap_module(model: nn.Module, path: str, new_module: nn.Module) -> None:
         parts = path.split(".")
-        d = {}
-        current = d
+        parent = model
         for p in parts[:-1]:
-            current[p] = {}
-            current = current[p]
-        current[parts[-1]] = new_module
-        return d
+            k = int(p) if p.isdigit() else p
+            parent = parent[k]
+        k = int(parts[-1]) if parts[-1].isdigit() else parts[-1]
+        parent[k] = new_module
 
-    def _merge(base: dict, update: dict):
-        for k, v in update.items():
-            if k in base and isinstance(base[k], dict) and isinstance(v, dict):
-                _merge(base[k], v)
-            else:
-                base[k] = v
-
-    replacements = {}
     for path, m in model.named_modules():
         if isinstance(m, nn.Linear) and path:
             bl = BitLinear(
@@ -74,9 +65,8 @@ def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
             bl.weight = m.weight
             if "bias" in m:
                 bl.bias = m.bias
-            _merge(replacements, _build_path(path, bl))
+            _swap_module(model, path, bl)
 
-    model.update_modules(replacements)
     return model
 
 
@@ -111,6 +101,13 @@ def tokenize_fn(tokenizer, texts: list[str], max_len: int = 512):
     """Tokenize a list of texts into MLX arrays."""
     if tokenizer is None:
         return [mx.array([ord(c) for c in t[:max_len]], dtype=mx.uint32) for t in texts]
+    # mlx_lm returns a TokenizerWrapper (not a callable transformers tokenizer).
+    # It exposes .encode(text) → list[int]; wrap for the batch case.
+    if hasattr(tokenizer, "encode"):
+        return [
+            mx.array(tokenizer.encode(x)[:max_len], dtype=mx.uint32)
+            for x in texts
+        ]
     enc = tokenizer(
         texts,
         truncation=True,
@@ -274,17 +271,16 @@ def main():
     # -- Load model
     print("1. loading base model...")
     try:
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        # MLX-native load (avoids the transformers/torch version dance —
+        # mlx_lm loads HF models straight into MLX arrays on the Metal backend).
+        from mlx_lm.utils import load as mlx_load
 
-        hf_model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype="auto")
-        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        model, tokenizer = mlx_load(args.model)
         tokenizer.pad_token = tokenizer.eos_token
-
-        from mlx.nn import from_huggingface
-
-        model = from_huggingface(hf_model)
-        del hf_model
-        n_params = sum(v.nbytes for v in model.trainable_parameters().values()) / 1e6
+        from mlx.utils import tree_flatten
+        tp = model.trainable_parameters()
+        leaves = [v for _, v in tree_flatten(tp)]
+        n_params = sum(v.nbytes for v in leaves if hasattr(v, 'nbytes')) / 1e6
         print(f"   loaded {n_params:.1f}M params")
     except ImportError:
         print("   transformers not available; building a tiny test transformer")
