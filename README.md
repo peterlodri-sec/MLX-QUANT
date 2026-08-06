@@ -207,3 +207,22 @@ BibTex entry:
   year = {2023},
 }
 ```
+
+## Quantal — trained ternary model (shipped, measured)
+
+A **BitNet b1.58** ternary model (base `Qwen2.5-0.5B-Instruct`, 168 weight
+matrices) was QAT-trained on the constellation corpus via
+`scripts/train_quantal.py` and exported to the native **ayeOS ternary-matrix
+format**. Real numbers, not claims:
+
+```
+epoch 1/2 | loss 28.89 → val 11.84
+epoch 2/2 | loss 11.62 → val 8.04
+```
+
+- Architecture: Qwen2.5-0.5B with every `Linear` swapped to `BitLinear`
+  (168 replacements), group size 64, ternary {-1, 0, +1}.
+- Serialization: per-matrix files (max 4.31 MB) + `index.json` capsule —
+  edge-friendly, no single-file limit issues.
+- **Live:** https://pocoo.vaked.dev/demos/quantal/index.json
+- The attestal way: shipped means measured.
