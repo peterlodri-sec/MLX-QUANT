@@ -306,7 +306,10 @@ def main():
         elapsed = time.time() - t0
         sps = steps_done / max(1.0, elapsed)
 
-        val_loss = evaluate(model, tokenizer, val_samples, args.max_len, batch_size=4)
+        # Eval with the same batch size as training: the CUDA graph cache is
+        # warmed on training shapes, so a smaller eval batch would JIT-build new
+        # graph shapes under memory pressure and cublasLtMatmul can fail (code 7).
+        val_loss = evaluate(model, tokenizer, val_samples, args.max_len, batch_size=args.batch_size)
         lr_now = float(schedule(global_step))
 
         rec = {
