@@ -1,0 +1,135 @@
+{
+  "base_corpus": {
+    "file": "data/train_ultra3.jsonl",
+    "samples": 7745
+  },
+  "datasets": {
+    "3nesdeniz/agentic-prompt-injection-5k": {
+      "seen": 4985,
+      "taken": 800,
+      "cap": 800
+    },
+    "3nesdeniz/agentic-prompt-injection-boundary-pairs": {
+      "seen": 2465,
+      "taken": 600,
+      "cap": 600
+    },
+    "3nesdeniz/english-daily-dialogues-10k": {
+      "seen": 10050,
+      "taken": 800,
+      "cap": 800
+    },
+    "3nesdeniz/english-prompt-injection-3k": {
+      "seen": 3103,
+      "taken": 800,
+      "cap": 800
+    },
+    "3nesdeniz/guardrail-hard-negatives": {
+      "seen": 2550,
+      "taken": 800,
+      "cap": 800
+    },
+    "3nesdeniz/turkish-conversation-prompt-injection": {
+      "seen": 2645,
+      "taken": 600,
+      "cap": 600
+    },
+    "3nesdeniz/turkish-daily-dialogues-5k": {
+      "seen": 15210,
+      "taken": 600,
+      "cap": 600
+    },
+    "3nesdeniz/turkish-prompt-injection-1k": {
+      "seen": 1050,
+      "taken": 600,
+      "cap": 600
+    },
+    "allenai/tulu-3-sft-mixture": {
+      "seen": 939343,
+      "taken": 400,
+      "cap": 400
+    },
+    "allenai/WildChat-1M": {
+      "seen": 837989,
+      "taken": 400,
+      "cap": 400
+    },
+    "CaiZhiTech/Evaluation-Dataset-of-AI-Agent-Security-Guardrails": {
+      "seen": 1018,
+      "taken": 600,
+      "cap": 600
+    },
+    "deepset/prompt-injections": {
+      "seen": 662,
+      "taken": 600,
+      "cap": 600
+    },
+    "GuardrailsAI/detect-jailbreak": {
+      "seen": 18258,
+      "taken": 600,
+      "cap": 600
+    },
+    "HuggingFaceH4/ultrachat_200k": {
+      "seen": 515311,
+      "taken": 400,
+      "cap": 400
+    },
+    "HuggingFaceTB/cosmopedia": {
+      "seen": 1299933,
+      "taken": 400,
+      "cap": 400
+    },
+    "JailbreakBench/JBB-Behaviors": {
+      "seen": 500,
+      "taken": 400,
+      "cap": 400
+    },
+    "JailbreakV-28K/JailBreakV-28k": {
+      "seen": 30280,
+      "taken": 400,
+      "cap": 400
+    },
+    "nvidia/Nemotron-RL-Agentic-Indirect-Prompt-Injection-v1": {
+      "seen": 1272,
+      "taken": 594,
+      "cap": 600
+    },
+    "nvidia/Nemotron-SFT-Agentic-v2": {
+      "seen": 284848,
+      "taken": 400,
+      "cap": 400
+    },
+    "Open-Orca/SlimOrca": {
+      "seen": 517982,
+      "taken": 400,
+      "cap": 400
+    },
+    "rubend18/ChatGPT-Jailbreak-Prompts": {
+      "seen": 79,
+      "taken": 68,
+      "cap": 600
+    },
+    "teknium/OpenHermes-2.5": {
+      "seen": 1001551,
+      "taken": 400,
+      "cap": 400
+    },
+    "xTRam1/safe-guard-prompt-injection": {
+      "seen": 10296,
+      "taken": 600,
+      "cap": 600
+    }
+  },
+  "datasets_total_taken": 12262,
+  "datasets_skipped": [
+    "donghyunli/Meta-Llama-3-8B-KronQ-HG",
+    "yangpei-comp/macosworld_intel",
+    "studioburnside/mlx-local-inference-benchmarks"
+  ],
+  "dedup": {
+    "unique_after_merge": 20007,
+    "removed_duplicates": 0
+  },
+  "final_total": 20007,
+  "out": "data/train_ultra_qwen3.jsonl"
+}

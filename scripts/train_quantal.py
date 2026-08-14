@@ -35,10 +35,17 @@ from mlx.nn.layers.bitlinear import BitLinear, activation_quant, weight_quant
 # ---------------------------------------------------------------------------
 
 
-def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
+def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False,
+                                  deployed_forward: bool = True):
     """Walk the module tree and replace every ``nn.Linear`` with a
     :class:`BitLinear` that copies the pretrained weight as its initial
     full-precision weight.
+
+    ``deployed_forward=True`` builds weight-quant-only BitLinears — the
+    deployed form the Rust runner implements. ``False`` builds the faithful
+    BitNet b1.58 forward (per-projection RMSNorm + activation_quant) used by
+    pre-deployed-forward checkpoints, so a legacy checkpoint can be resumed
+    without silently changing its forward.
 
     Uses :meth:`mlx.nn.Module.named_modules` to find all Linear layers,
     builds a nested dict matching the module tree, and calls
@@ -61,6 +68,7 @@ def replace_linear_with_bitlinear(model: nn.Module, binary: bool = False):
                 output_dims=m.weight.shape[0],
                 bias="bias" in m,
                 binary=binary,
+                deployed_forward=deployed_forward,
             )
             bl.weight = m.weight
             if "bias" in m:

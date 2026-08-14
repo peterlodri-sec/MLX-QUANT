@@ -34,22 +34,39 @@ def activation_quant(x: mx.array) -> mx.array:
     return mx.clip(mx.round(x * scale), -128, 127) / scale
 
 
-@partial(mx.compile, shapeless=True)
-def weight_quant(w: mx.array) -> mx.array:
-    r"""Nominally-ternary weight quantization: :math:`\text{sign}(w - \bar{w}) \cdot \text{mean}(|w|)`.
+def weight_quant(w: mx.array, threshold: float = 0.5, group_size: int = 64) -> mx.array:
+    r"""True thresholded ternary weight quantization (BitNet b1.58).
 
-    In floating-point practice this is ~binary, not truly ternary: ``sign``
-    on a continuous value essentially never lands on exactly zero (the one
-    input that would produce the third ternary state). Measured against a
-    real trained checkpoint elsewhere in the BitNet b1.58 line this
-    implementation descends from: 9 exact zeros out of 162,129,408 weight
-    elements (0.0000055%). See :func:`binary_weight_quant` for a version
-    that makes this explicit and provable rather than an accident of
-    floating point.
+    .. math::
+
+        \alpha_g = \mathrm{mean}_{j \in g}(|w|), \qquad
+        \hat{w}_j = \mathrm{round}(w_j / \alpha_g) \cdot \alpha_g
+
+    per ``group_size``-column group (matches the ayeOS scale layout the Rust
+    runner dequantizes as ``(code-1) * scale``). Values with
+    :math:`|w_j| < \frac{1}{2}\alpha_g` land on the true third state,
+    **zero**. Measured on the trained SOTA checkpoint ~32-34% of the weights
+    sit below ``0.5 * scale`` and want the zero state; ``sign``-based
+    collapse (the old behaviour) pushed them to ``±scale`` and wasted the
+    format's third code. This is the quantizer the deployed forward and the
+    ayeOS export share, so training ≡ deployment ≡ Rust by construction.
+
+    ``threshold`` scales the zero band as a fraction of ``scale``; the default
+    ``0.5`` is the `round` tie point (BitNet's own rule).
     """
-    scale = mx.abs(w).mean()
-    shifted = w - w.mean()
-    return mx.sign(shifted) * scale
+    if group_size is None or w.ndim < 2:
+        scale = mx.abs(w).mean()
+        return mx.where(mx.abs(w) < threshold * scale, 0.0, mx.sign(w) * scale)
+    orig_shape = w.shape
+    k = orig_shape[-1]
+    n = 1
+    for d in orig_shape[:-1]:
+        n *= d
+    w2 = mx.reshape(w, (n, k))
+    wr = mx.reshape(w2, (n, k // group_size, group_size))
+    scale_g = mx.abs(wr).mean(axis=-1, keepdims=True)
+    q = mx.where(mx.abs(wr) < threshold * scale_g, 0.0, mx.sign(wr) * scale_g)
+    return mx.reshape(q, orig_shape)
 
 
 @partial(mx.compile, shapeless=True)
@@ -101,6 +118,15 @@ class BitLinear(Module):
             measured ~binary). Default: ``False``.
         norm_eps (float, optional): ``eps`` for the input :obj:`RMSNorm`.
             Default: ``1e-6``.
+        deployed_forward (bool, optional): Weight-quant-only forward —
+            ``x @ weight_quant(W).T``, NO per-projection RMSNorm, NO
+            activation_quant. This is the deployed form (what the Rust
+            runner implements). ``False`` enables the faithful BitNet
+            b1.58 forward (per-projection RMSNorm + int8 activation_quant)
+            used by the pre-``deployed-forward`` checkpoints. The ``norm``
+            parameter is only created when ``deployed_forward=False``, so
+            deployed checkpoints carry no per-projection gain archaeology.
+            Default: ``True``.
     """
 
     def __init__(
@@ -110,6 +136,7 @@ class BitLinear(Module):
         bias: bool = True,
         binary: bool = False,
         norm_eps: float = 1e-6,
+        deployed_forward: bool = True,
     ) -> None:
         super().__init__()
         scale = (1.0 / input_dims) ** 0.5
@@ -121,22 +148,30 @@ class BitLinear(Module):
         if bias:
             self.bias = mx.zeros((output_dims,))
         self.binary = binary
-        self.norm = RMSNorm(input_dims, eps=norm_eps)
+        self.deployed_forward = deployed_forward
+        if not deployed_forward:
+            self.norm = RMSNorm(input_dims, eps=norm_eps)
 
     def _extra_repr(self) -> str:
         return (
             f"input_dims={self.weight.shape[1]}, output_dims={self.weight.shape[0]}, "
-            f"bias={'bias' in self}, binary={self.binary}"
+            f"bias={'bias' in self}, binary={self.binary}, "
+            f"deployed_forward={self.deployed_forward}"
         )
 
     def __call__(self, x: mx.array) -> mx.array:
         w = self["weight"]
-        x_norm = self.norm(x)
 
         quant_fn = binary_weight_quant if self.binary else weight_quant
-        x_quant = _quantize_ste(x_norm, activation_quant(x_norm))
         w_quant = _quantize_ste(w, quant_fn(w))
 
+        if self.deployed_forward:
+            if "bias" in self:
+                return mx.addmm(self["bias"], x, w_quant.T)
+            return x @ w_quant.T
+
+        x_norm = self.norm(x)
+        x_quant = _quantize_ste(x_norm, activation_quant(x_norm))
         if "bias" in self:
             return mx.addmm(self["bias"], x_quant, w_quant.T)
         return x_quant @ w_quant.T

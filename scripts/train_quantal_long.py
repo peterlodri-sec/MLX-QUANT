@@ -11,12 +11,22 @@ Key lessons baked in:
     crashes apply_single's .astype)
   - deployed forward: weight-quant-only BitLinear (per-projection RMSNorm +
     activation_quant skipped) so training == inference in the Rust runner.
+    Default since the deployed-forward fix; --no-deployed-forward restores
+    the faithful b1.58 forward for legacy checkpoint resumes.
 
 Usage:
   python scripts/train_quantal_long.py \
     --model Qwen/Qwen2.5-0.5B --data train.jsonl \
     --batch-size 12 --max-len 512 --epochs 40 --val-size 90 \
     --outdir ckpts --curve curve.jsonl [--resume ckpts/quantal-long-best.safetensors]
+
+Qwen3 (quant-ultra round): the --model flag is architecture-agnostic —
+  python scripts/train_quantal_long.py \
+    --model Qwen/Qwen3-1.7B --data train_ultra_qwen3.jsonl \
+    --batch-size 12 --max-len 512 --epochs 40 --val-size 90 --outdir ckpts \
+    --curve curve.jsonl
+  (28 layers x 7 projections = 196 BitLinears; vocab 151936 unchanged;
+  tied embeddings -> no lm_head swap. mx.roll `axes`/`axis` shim applied.)
 """
 
 import argparse
@@ -86,7 +96,12 @@ def make_batch(tokenizer, texts: list[str], max_len: int):
         masks.append(mask)
     inputs = mx.stack(batch)
     mask = mx.stack(masks)
-    targets = mx.roll(inputs, -1, axes=(1,))
+    # fork-mlx (0.32.1.dev20260811) uses `axis=`, stock mlx uses `axes=` —
+    # shim both so the same script runs on the Mac fork and on vast/mlx-cuda.
+    try:
+        targets = mx.roll(inputs, -1, axis=(1,))
+    except TypeError:
+        targets = mx.roll(inputs, -1, axes=(1,))
     targets[:, -1] = 0  # pad token 0, weighted out by mask
     return inputs, targets, mask
 
@@ -192,6 +207,12 @@ def main():
     p.add_argument("--outdir", default="ckpts")
     p.add_argument("--curve", default="curve.jsonl")
     p.add_argument("--resume", default=None, help="safetensors to resume from")
+    p.add_argument("--deployed-forward", action=argparse.BooleanOptionalAction,
+                   default=True,
+                   help="weight-quant-only forward == Rust runner (default). "
+                        "Pass --no-deployed-forward to rebuild the faithful "
+                        "per-projection-RMSNorm BitLinear forward for a legacy "
+                        "checkpoint.")
     args = p.parse_args()
 
     mx.random.seed(args.seed)
@@ -222,7 +243,7 @@ def main():
 
     print("2. swapping Linear -> BitLinear (QAT, deployed forward)...")
     n_before = sum(1 for m in model.modules() if isinstance(m, nn.Linear))
-    model = replace_linear_with_bitlinear(model)
+    model = replace_linear_with_bitlinear(model, deployed_forward=args.deployed_forward)
     n_after = sum(1 for m in model.modules() if isinstance(m, BitLinear))
     print(f"   replaced {n_before} Linear -> {n_after} BitLinear")
 

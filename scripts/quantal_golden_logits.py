@@ -216,14 +216,28 @@ def forward(tokens, mats, emb, norms, bitlinear=False, extras=None):
 # ------------------------------------------------------------------- extras ---
 
 def _read_bf16_tensor(path, header, key):
-    """Read a single BF16 tensor from a safetensors file (header parse)."""
+    """Read a single BF16 tensor from a safetensors file (header parse).
+
+    ``data_offsets`` in safetensors are relative to the START OF THE DATA
+    SECTION (after the 8-byte header-length prefix + header JSON), not the
+    file start. Reading from the raw offset instead lands 8+header_len bytes
+    early and returns the neighbouring tensor's bytes.
+    """
+    import struct as _struct
+
     info = header[key]
     start, end = info["data_offsets"]
     with open(path, "rb") as f:
-        f.seek(start)
+        hdr_len = _struct.unpack("<Q", f.read(8))[0]
+        data_start = 8 + hdr_len
+        f.seek(data_start + start)
         raw = f.read(end - start)
     bits = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32)
-    return bits << 16  # BF16 -> F32 (top 16 bits)
+    # BF16 -> F32: shift the 16-bit value into the top half of an f32 bit
+    # pattern, then REINTERPRET as float32. Without the `.view(np.float32)`
+    # the shifted bits are a huge uint32 integer (the numeric value of the
+    # bit pattern, ~1e9), which corrupts every biased projection.
+    return (bits << 16).view(np.float32)
 
 
 def load_bitlinear_extras(checkpoint):

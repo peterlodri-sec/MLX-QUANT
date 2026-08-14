@@ -32,6 +32,7 @@ from pathlib import Path
 
 import mlx.core as mx
 import mlx.nn as nn
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from train_quantal import replace_linear_with_bitlinear  # noqa: E402
@@ -46,6 +47,37 @@ def sha256_of(path: str) -> str:
     return h.hexdigest()
 
 
+def ternary_quantize_numpy(w: np.ndarray, group_size: int, threshold: float = 0.5):
+    """ayeOS ternary quantization, fork-`mx.quantize(mode='ternary')`-equivalent.
+
+    ``w`` is the *full-precision* weight (NOT pre-quantized). Per
+    ``group_size``-column group: scale = mean(|w|) — the same scale the
+    training forward uses — and code = the thresholded ternary of ``w/scale``
+    (zero when |w| < threshold·scale), packed 2-bit LSB-first, 16 codes per
+    ``u32`` word. Mirrors what the Rust runner dequantizes as ``(code-1)*scale``
+    and reproduces the forward's quantized weight exactly.
+
+    Returns ``(codes, scales)`` numpy arrays matching the ayeOS schema.
+    """
+    n, k = w.shape
+    codes = np.zeros((n, k // 16), dtype=np.uint32)
+    scales = np.zeros((n, k // group_size), dtype=np.float32)
+    for r in range(n):
+        row = w[r]
+        for g in range(k // group_size):
+            group = row[g * group_size:(g + 1) * group_size]
+            scale = np.abs(group).mean()
+            scales[r, g] = scale
+            vals = np.where(np.abs(group) < threshold * scale, 0, np.sign(group))
+            vals = vals.astype(np.int8)
+            for j, v in enumerate(vals):
+                code = v + 1  # -1→0, 0→1, +1→2
+                words = (g * group_size + j) // 16
+                bit = 2 * ((g * group_size + j) % 16)
+                codes[r, words] |= np.uint32(code) << bit
+    return codes, scales
+
+
 def export_capsule(model, group_size, metadata):
     """Same per-layer logic as train_quantal.export_to_ayeos, returned as a
     list of matrix entries instead of written to one giant JSON file."""
@@ -53,10 +85,8 @@ def export_capsule(model, group_size, metadata):
     for path, m in model.named_modules():
         if isinstance(m, BitLinear) and path:
             w = m["weight"]
-            wq = weight_quant(w)
-            codes, scales = mx.quantize(
-                wq, group_size=group_size, bits=2, mode="ternary"
-            )
+            w_np = np.array(w.astype(mx.float32).tolist(), dtype=np.float32)
+            codes, scales = ternary_quantize_numpy(w_np, group_size)
             entries.append(
                 {
                     "name": path,
