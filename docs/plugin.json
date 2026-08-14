@@ -1,0 +1,64 @@
+{
+  "name": "quantal-sota",
+  "version": "1.0.0",
+  "description": "Quantal ternary SOTA training pipeline — thresholded-ternary deployed-forward QAT, nightly GPU run, ayeOS export, Rust parity, HF publish, transformers port.",
+  "kind": "plugin",
+  "skills": [
+    {
+      "name": "quantal-sota-training",
+      "path": "SKILL.md",
+      "description": "Run the full quantal SOTA pipeline (train → export → parity → publish)."
+    }
+  ],
+  "commands": {
+    "train-nightly": {
+      "description": "Start a nightly SOTA run on a vast GPU",
+      "script": "MLX-QUANT/scripts/nightly-quantal.sh",
+      "params": {
+        "epochs": 40,
+        "batch_size": 12,
+        "max_len": 256
+      }
+    },
+    "export": {
+      "description": "Export a checkpoint to the ayeOS 168-matrix format",
+      "script": "MLX-QUANT/scripts/export_quantal_checkpoint.py",
+      "params": {
+        "checkpoint": "<ckpt.safetensors>",
+        "out_dir": "<demo>",
+        "model": "Qwen/Qwen2.5-0.5B"
+      }
+    },
+    "parity": {
+      "description": "Rust-vs-MLX golden-logits parity gate",
+      "script": "MLX-QUANT/scripts/quantal_compare_logits.py",
+      "params": {
+        "rust": "<rust.json>",
+        "ref": "<ref.json>"
+      }
+    },
+    "to-bitnet": {
+      "description": "Load the export into transformers BitNetForCausalLM + parity",
+      "script": "MLX-QUANT/scripts/quantal_to_bitnet.py",
+      "params": {
+        "model_dir": "<demo>",
+        "ref": "<ref.json>"
+      }
+    }
+  },
+  "data": {
+    "corpus": "MLX-QUANT/data/train_ultra_qwen3.jsonl",
+    "samples": 20007
+  },
+  "publish": {
+    "hf_repo": "PeetPedro/quantal-ternary",
+    "manifest_order": ["m*.json", "embeddings.f16", "norms.f32", "tokenizer.json", "README.md", "index.json"],
+    "note": "index.json (export_complete: true) must be the LAST commit — manifest window closes last."
+  },
+  "meta": {
+    "best_val": 2.1469,
+    "best_sha": "21294c68f05f36fcf72a25246caea92cac6664173f684328a2aad72f9a988285",
+    "parity": "1.3e-05",
+    "transformers_pr": "huggingface/transformers#47955"
+  }
+}
