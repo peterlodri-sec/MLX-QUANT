@@ -13,9 +13,9 @@ from mlx.quant.bitnet import quantize_ternary_numpy, unpack_ternary_numpy
 
 
 def run_benchmark_cmd(args):
-    print("=" * 82)
-    print("✦ MLX-QUANT: BitNet b1.58 Ternary Profiler on Apple Silicon UMA")
-    print("=" * 82)
+    print("=" * 90)
+    print("✦ MLX-QUANT: BitNet b1.58 Ternary SIMD Profiler & Token Throughput (Apple Silicon UMA)")
+    print("=" * 90)
     
     shapes = [
         ("Llama-3-8B QKV Proj (M=1, K=4096, N=4096)", 1, 4096, 4096),
@@ -23,9 +23,12 @@ def run_benchmark_cmd(args):
         ("Llama-3-8B FFN Down-Proj (M=1, K=14336, N=4096)", 1, 14336, 4096),
     ]
     
-    header = f"{'Workload / Shape':<46} | {'FP32 Latency':<12} | {'Ternary 1.58b':<13} | {'Speedup':<9} | {'Compression'}"
+    header = f"{'Workload / Shape':<46} | {'FP32':<9} | {'Ternary 1.58b':<13} | {'Speedup':<9} | {'Bandwidth'}"
     print(header)
     print("-" * len(header))
+    
+    total_ternary_layer_ms = 0.0
+    total_fp32_layer_ms = 0.0
     
     for name, M, K, N in shapes:
         x_mx = mx.random.normal((M, K)).astype(mx.float32)
@@ -56,11 +59,32 @@ def run_benchmark_cmd(args):
         t_ternary = (time.perf_counter() - t0) / 25.0 * 1000.0
         
         speedup = t_fp32 / max(t_ternary, 1e-6)
-        compression = (w_mx.nbytes) / (w_q.nbytes + scales.nbytes + biases.nbytes)
+        nbytes_transferred = w_q.nbytes + scales.nbytes + (biases.nbytes if biases is not None else 0)
+        eff_bandwidth_gbs = (nbytes_transferred / (t_ternary / 1000.0)) / 1e9
         
-        print(f"{name:<46} | {t_fp32:>9.3f} ms | {t_ternary:>10.3f} ms | {speedup:>7.2f}x | {compression:>9.1f}x")
+        print(f"{name:<46} | {t_fp32:>6.2f} ms | {t_ternary:>10.3f} ms | {speedup:>7.2f}x | {eff_bandwidth_gbs:>7.1f} GB/s")
         
-    print("=" * 82)
+        # Accumulate for 1 transformer layer (Attn + FFN)
+        if "QKV" in name:
+            total_ternary_layer_ms += t_ternary * 3 # Q, K, V
+            total_fp32_layer_ms += t_fp32 * 3
+        elif "Up" in name or "Down" in name:
+            total_ternary_layer_ms += t_ternary
+            total_fp32_layer_ms += t_fp32
+            
+    print("=" * 90)
+    
+    # 32-layer Llama-3-8B end-to-end token generation projection
+    e2e_ternary_step_ms = total_ternary_layer_ms * 32
+    e2e_fp32_step_ms = total_fp32_layer_ms * 32
+    
+    tok_per_sec_ternary = 1000.0 / max(e2e_ternary_step_ms, 1e-6)
+    tok_per_sec_fp32 = 1000.0 / max(e2e_fp32_step_ms, 1e-6)
+    
+    print(f"✦ End-to-End Llama-3-8B (32 Layers) Token Generation Projection:")
+    print(f"  • FP32 Unquantized Baseline  : {e2e_fp32_step_ms:>7.2f} ms/tok  ({tok_per_sec_fp32:>6.1f} tok/s)")
+    print(f"  • BitNet b1.58 Ternary Metal : {e2e_ternary_step_ms:>7.2f} ms/tok  (\033[92m{tok_per_sec_ternary:>6.1f} tok/s\033[0m — \033[96m{tok_per_sec_ternary/tok_per_sec_fp32:>4.1f}x Speedup\033[0m)")
+    print("=" * 90)
     print("✅ Hardware verified on Apple Silicon Unified Memory Architecture.")
 
 
