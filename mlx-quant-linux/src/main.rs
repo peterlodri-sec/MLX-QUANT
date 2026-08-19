@@ -19,6 +19,7 @@ pub mod quantum_entanglement;
 pub mod event_horizon;
 pub mod multiverse;
 pub mod big_bang;
+pub mod marley_and_fifike;
 
 use allocator::BumpAllocator;
 use tensor::{Tensor, DType};
@@ -40,12 +41,17 @@ use quantum_entanglement::QuantumEntanglement;
 use event_horizon::EventHorizon;
 use multiverse::Multiverse;
 use big_bang::BigBang;
+use marley_and_fifike::ProtectiveFrequencies;
 
 use std::time::Instant;
 use std::fs::File;
 
 fn main() {
     println!("--- MLX-QUANT: The Unified Astrophysical Architecture ---");
+    
+    // -1. THE GUARDIANS
+    ProtectiveFrequencies::emit_shield();
+    println!("[*] [GUARDIANS] Marley the Astronaut 🐕 and Fifike the Cat 🐈 emitting protective frequencies. Radiation shielded.");
     
     // 0. BIG BANG
     BigBang::ignite_tensor_graph();
