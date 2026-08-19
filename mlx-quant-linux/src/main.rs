@@ -19,6 +19,10 @@ pub mod quantum_entanglement;
 pub mod event_horizon;
 pub mod multiverse;
 pub mod big_bang;
+pub mod white_hole;
+pub mod cmb;
+pub mod pulsar;
+pub mod dark_energy;
 pub mod marley_and_fifike;
 
 use allocator::BumpAllocator;
@@ -41,6 +45,10 @@ use quantum_entanglement::QuantumEntanglement;
 use event_horizon::EventHorizon;
 use multiverse::Multiverse;
 use big_bang::BigBang;
+use white_hole::WhiteHole;
+use cmb::CosmicMicrowaveBackground;
+use pulsar::Pulsar;
+use dark_energy::DarkEnergy;
 use marley_and_fifike::TheGuardians;
 
 use std::time::Instant;
@@ -58,10 +66,14 @@ fn main() {
     // 0. BIG BANG
     BigBang::ignite_tensor_graph();
     println!("[*] [BIG BANG] The tensor graph has organically expanded from a single seed.");
+    CosmicMicrowaveBackground::permeate_context_window(128000);
+    println!("[*] [CMB] 128k KV-Cache permeated across the context window.");
 
     // 1. MULTIVERSE
     Multiverse::join_swarm("PETER_LODRI_CLUSTER");
     println!("[*] [MULTIVERSE] Stigmergic Node initialized. Listening for network pheromones.");
+    Pulsar::emit_sync_beacon();
+    println!("[*] [PULSAR] Nanosecond sync beacon emitted. Swarm aligned.");
 
     let allocator = BumpAllocator::new();
     let portal = IoBlackhole::new(&allocator);
@@ -102,6 +114,8 @@ fn main() {
     let futures = GravitationalLensing::speculate_timelines();
     TimeDilation::micro_batch_loop();
     println!("[*] [LENSING] Speculatively computing {} future timelines in dilated time.", futures.len());
+    DarkEnergy::accelerate_entropy(1.15);
+    println!("[*] [DARK ENERGY] Entropy scaled to prevent gravitational looping.");
 
     // 10. COMPUTE SINGULARITY (RAW AArch64 ASSEMBLY)
     let activations_int4 = Tensor::new(vec![4096, 4096], DType::Quantized4Bit, &allocator);
@@ -117,6 +131,8 @@ fn main() {
     Quasar::emit_rdma_jet(&output_tensor, "10.0.0.42");
     Multiverse::deposit_pheromone(1); // Indicate Layer 1 is complete
     println!("[*] [QUASAR] Emitted relativistic output jet via RDMA. Pheromones deposited.");
+    WhiteHole::open_ejection_port();
+    println!("[*] [WHITE HOLE] Ejection port opened for infinite chain-of-thought generation.");
 
     // 12. HAWKING RADIATION
     HawkingRadiation::evaporate_cold_cache(&allocator);
