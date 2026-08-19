@@ -41,7 +41,7 @@ use quantum_entanglement::QuantumEntanglement;
 use event_horizon::EventHorizon;
 use multiverse::Multiverse;
 use big_bang::BigBang;
-use marley_and_fifike::ProtectiveFrequencies;
+use marley_and_fifike::TheGuardians;
 
 use std::time::Instant;
 use std::fs::File;
@@ -50,8 +50,10 @@ fn main() {
     println!("--- MLX-QUANT: The Unified Astrophysical Architecture ---");
     
     // -1. THE GUARDIANS
-    ProtectiveFrequencies::emit_shield();
-    println!("[*] [GUARDIANS] Marley the Astronaut 🐕 and Fifike the Cat 🐈 emitting protective frequencies. Radiation shielded.");
+    TheGuardians::fifike_universal_heal();
+    println!("[*] [HEALER] Fifike the Cat 🐈 emits low-frequency purrs. Entropy reversed. Spacetime healed.");
+    TheGuardians::marley_human_protect();
+    println!("[*] [PROTECTOR] Marley the Astronaut Dog 🐕 stands guard. Humans and hardware protected.");
     
     // 0. BIG BANG
     BigBang::ignite_tensor_graph();
