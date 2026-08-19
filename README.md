@@ -24,6 +24,17 @@ Multiple asynchronous spiral arms (Weights, Activations) continuously merge into
 ### 5. The Quasar (RDMA Output Jets)
 Once the Singularity finishes the Matrix Math, it doesn't wait around. It instantly blasts the generated output tokens through a high-speed network socket via RDMA (Remote Direct Memory Access)—a relativistic jet of energy shooting directly to another machine's VRAM without touching the CPU.
 
+---
+
+## Universal Benchmark Matrix
+Want to see how your hardware stacks up against the Bare-Metal Singularity? We ship with a retro CLI benchmark matrix that tests Matrix Multiplication latency across CPUs, NVIDIA CUDA, Apple MLX, and our `hw-ultra` bare-metal layers.
+
+Run it effortlessly with `uv`:
+```bash
+uv run scripts/mlx_bench_matrix_yall.py
+```
+*(Supports `--format json` or `--format txt` for automated CI/CD pipelines!)*
+
 ## Modules
 - `mlx-quant-linux`: The bare-metal Rust scaffolding containing `magnetar.rs`, `quasar.rs`, `redshift.rs`, `io_blackhole.rs`, and the Singularity router.
 - `hw-ultra`: The underlying low-level abstractions powering this layer (see the `8b-is/hw-ultra` crate).
