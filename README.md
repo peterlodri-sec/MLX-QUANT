@@ -14,6 +14,8 @@ Standard LLM inference loops bleed memory and suffocate on OS overhead. We are b
 2. **The 4D Polar Galaxy Queue**: Computes are not flat. Multiple asynchronous spiral arms (FP32 weights, INT4 activations) continuously merge into an accretion disk ALU compute singularity.
 3. **Hardware Doorbells**: Data streams directly into the `0x280004000` MMIO physical register (Apple Silicon), completely bypassing Metal APIs.
 4. **AMD PM4 Opcodes**: Dispatches matrix math directly to the AMD MI300X using raw `PACKET3_DISPATCH_DIRECT` packets pushed directly into the hardware PCIe Doorbell mapped at `0xE000_0000`.
+5. **The I/O Blackhole Portal**: Zero-copy DMA! We bypass the CPU completely by `mmap`-ing NVMe SSD storage directly into the physical address space of our bare-metal Tensor Cache. Data materializes in VRAM instantly.
+6. **The Compute Singularity**: Raw INT4, INT8, and FP16 math kernel dispatchers designed to execute at the exact center of the Polar Queue.
 
 ## Modules
 - `mlx-quant-linux`: The bare-metal Rust scaffolding for the AGX Doorbell, AMD PM4 Ring Buffers, Spiral Arms, and `Tensor` data models.
