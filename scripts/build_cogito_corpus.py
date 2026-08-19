@@ -144,6 +144,14 @@ def is_text(path: Path) -> bool:
 
 
 # ── minimal PII + secret scrubbing (before anything is written to the corpus) ──
+# Lockfiles/manifests are exempt from the digit rules (PHONE/IP): a checksum
+# on every line, no PII possible — and the Go pseudo-version 14-digit UTC
+# commit timestamp (v0.0.0-YYYYMMDDHHMMSS-<sha>) is NOT a phone. Secret
+# shapes stay active everywhere — a token in a lockfile is still a token.
+_LOCKFILES = {
+    "go.sum", "go.mod", "package-lock.json", "Cargo.lock", "yarn.lock",
+    "poetry.lock", "requirements.txt",
+}
 _SECRET_PATTERNS = [
     # well-known API key / token shapes (highest confidence, low false-positive)
     (re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"), "SK-API-KEY"),
@@ -160,17 +168,38 @@ _SECRET_PATTERNS = [
     (re.compile(r"\b0x[a-fA-F0-9]{40}\b"), "WALLET-ADDRESS"),
     # PII
     (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "EMAIL"),
-    (re.compile(r"\b\+?[0-9]{1,3}[ .-]?\(?[0-9]{2,4}\)?[ .-]?[0-9]{3,4}[ .-]?[0-9]{3,4}\b"), "PHONE"),
+    # a phone must look like one: a leading + or a separator in the run, and
+    # never adjacent to a hex/base64 run. A bare 14-digit run like
+    # 20191001225624 is a UTC commit timestamp (Go pseudo-version), not a
+    # phone — the adjacency refusal kills the pseudo-version case alone.
+    # Note: no trailing \b — "(415) 555-2671" has a ")" at the boundary.
+    (re.compile(r"(?:\+[0-9]{1,3}[ .-]?)?(?:\([0-9]{2,4}\)|[0-9]{2,4})[ .-][0-9]{3,4}[ .-]?[0-9]{3,4}(?![0-9])"), "PHONE"),
     (re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"), "IP"),
 ]
+# long hex / base64 runs — a match touching one is a hash, not a phone
+_HEX_B64_RUN = re.compile(r"(?:[0-9a-fA-F]{12,}|[A-Za-z0-9+/]{16,}={0,2})")
 
 
-def scrub_text(text: str) -> str:
+def _phone_adjacent_to_hash(text: str, m: re.Match) -> bool:
+    """Refuse a PHONE match whose neighborhood contains a hex/base64 run —
+    Go pseudo-versions (v0.0.0-<ts>-<sha> h1:...) die on this condition."""
+    start, end = m.start(), m.end()
+    return bool(_HEX_B64_RUN.search(text[max(0, start - 8): end + 8]))
+
+
+def scrub_text(text: str, rel: str = "") -> str:
     """Redact minimal PII + secrets before a file lands in the corpus.
     Conservative: only well-formed token/secret/credential shapes are replaced,
-    so ordinary code (test@example.com, 127.0.0.1) is NOT mangled."""
+    so ordinary code (test@example.com, 127.0.0.1) is NOT mangled.
+    Lockfiles/manifests skip the digit rules (PHONE/IP); secret shapes stay."""
+    is_lockfile = Path(rel).name.lower() in _LOCKFILES
     for pat, label in _SECRET_PATTERNS:
-        text = pat.sub(f"[{label}]", text)
+        if is_lockfile and label in ("PHONE", "IP"):
+            continue
+        if label == "PHONE":
+            text = pat.sub(lambda m: m.group(0) if _phone_adjacent_to_hash(text, m) else "[PHONE]", text)
+        else:
+            text = pat.sub(f"[{label}]", text)
     return text
 
 
@@ -239,7 +268,7 @@ def process_repo(repo: dict, worker: int, done: set[str]) -> dict | None:
                 continue
             if len(text) < 40:
                 continue
-            text = scrub_text(text)  # PII + secret redaction before the corpus
+            text = scrub_text(text, rel)  # PII + secret redaction before the corpus
             files += 1
             chars += len(text)
             rows += 1
@@ -265,15 +294,76 @@ def process_repo(repo: dict, worker: int, done: set[str]) -> dict | None:
 # ── uploader: batched directory sync (1 HF call moves ALL staged JSONLs).
 # Per-file `hf upload` calls hit HF rate-limits hard (every upload was 429'd).
 # A single `hf upload <dir>` commits the whole batch — one HTTP round-trip.
+# HF enforces a 10,000-files-per-directory limit on git-backed repos, so the
+# batch is sharded into `data/part<N>/` subdirectories (7,500 each). The
+# shard index is chosen from what HF ALREADY has: part0 filled up across
+# earlier builds (12,000 files there now), so the uploader probes the repo
+# tree and starts at the first part dir with room — never part0 blindly.
+MAX_FILES_PER_DIR = 7500  # under HF's 10k/dir limit, leaving headroom
+
+
+def hf_part_usage() -> dict[str, int]:
+    """Probe the HF dataset repo for existing data/part<N>/ dirs and their
+    file counts. Paginating the FULL count is wasteful (part0 already holds
+    ~342k files = 342 API pages), so we read the first page only and use
+    HF's `hasMore` flag: if there are MORE files than a page (1000), the
+    part is beyond MAX_FILES_PER_DIR (7500) anyway → mark it full.
+    Returns {part_name: file_count_or_full}."""
+    usage: dict[str, int] = {}
+    for idx in range(0, 60):  # up to part59
+        name = f"part{idx}"
+        url = (f"https://huggingface.co/api/datasets/{DATASET_REPO}"
+               f"/tree/main/data/{name}?limit=1000&offset=0")
+        try:
+            out = subprocess.run(
+                ["curl", "-s", "--max-time", "10", url],
+                capture_output=True, text=True, timeout=15,
+            )
+            entries = json.loads(out.stdout)
+        except Exception:  # noqa: BLE001
+            break  # transient error / dir doesn't exist → stop probing
+        if not isinstance(entries, list) or not entries:
+            break  # first empty part index → stop probing
+        if len(entries) >= 1000:
+            usage[name] = MAX_FILES_PER_DIR  # at least a full page → full
+        else:
+            usage[name] = len(entries)
+    return usage
+
+
+def pick_shard(usage: dict[str, int]) -> str:
+    """First part dir with room under MAX_FILES_PER_DIR, else next index."""
+    if not usage:
+        return "part0"
+    for idx in sorted(int(k[4:]) for k in usage):
+        if usage[f"part{idx}"] < MAX_FILES_PER_DIR:
+            return f"part{idx}"
+    return f"part{max(int(k[4:]) for k in usage) + 1}"
+
+
 def upload_worker(worker: int, done: set[str], results: list, stop: threading.Event) -> None:
     last_sync = 0.0
     sync_dir = STAGING.parent / "cogito-sync"
+    # probe HF once at startup: which part dirs exist and how full are they?
+    # (part0 accumulated 12k files across earlier builds — never blind-start
+    # there again). The count is tracked locally afterwards: this worker is
+    # the only writer to data/part<N>/.
+    usage = hf_part_usage()
+    base_part = pick_shard(usage)
+    part_count = usage.get(base_part, 0)
+    print(f"[u{worker}]   part state: {usage or '(no part dirs yet)'} → "
+          f"starting at {base_part} ({part_count} files there)", flush=True)
     while True:
-        # final drain when told to stop; otherwise keep cycling
-        if stop.is_set():
+        # final drain when told to stop: run one last sync cycle (no sleep,
+        # no min-interval) to push everything left in staging, then exit
+        draining = stop.is_set()
+        if draining:
+            pass  # fall through to the sync attempt below
+        if draining and not list(STAGING.glob("w0/*.jsonl")) and not list(STAGING.glob("w1/*.jsonl")):
             break
-        # wait for a batch to accumulate, then sync the whole staging dir
-        time.sleep(10)
+        if not draining:
+            # wait for a batch to accumulate, then sync the whole staging dir
+            time.sleep(10)
         try:
             batch = [p for w in ("w0", "w1") for p in (STAGING / w).glob("*.jsonl")]
         except OSError:
@@ -293,7 +383,8 @@ def upload_worker(worker: int, done: set[str], results: list, stop: threading.Ev
         # keep writing new files, so there is always a fresh one)
         if not settled:
             continue
-        if time.time() - last_sync < 15:  # min interval between HF commits
+        # min interval between HF commits — skipped during the final drain
+        if not draining and time.time() - last_sync < 15:
             continue
         last_sync = time.time()
         n = len(settled)
@@ -301,12 +392,36 @@ def upload_worker(worker: int, done: set[str], results: list, stop: threading.Ev
         # hardlink the settled files into a dedicated sync dir so we upload
         # ONLY those files, never the whole staging (which grows while we
         # upload and made each sync take minutes).
+        # Reset the sync dir every cycle — stale links from failed cycles
+        # would otherwise accumulate and be re-uploaded.
+        if sync_dir.exists():
+            for old in sync_dir.rglob("*"):
+                try:
+                    if old.is_file():
+                        old.unlink(missing_ok=True)
+                    elif old.is_dir():
+                        old.rmdir()
+                except OSError:
+                    pass
         sync_dir.mkdir(parents=True, exist_ok=True)
         linked = []
-        for p in settled:
+        # hardlink the settled files DIRECTLY into part<N>/ subdirs — never
+        # into the sync_dir root, or `hf upload` would upload every file twice
+        # (flat + shard copies) and blow past the 10k/dir limit as 2x counts.
+        # The part index tracks HF's CURRENT state locally: part0 is already
+        # full (12k files), so we start at the first part dir with room and
+        # roll to part+1 whenever the local count crosses MAX_FILES_PER_DIR.
+        shard = sync_dir / base_part
+        shard.mkdir(parents=True, exist_ok=True)
+        base_idx = int(base_part[4:])
+        for i, p in enumerate(settled):
             try:
                 total_mb += p.stat().st_size / 1e6
-                dst = sync_dir / p.name
+                if i % MAX_FILES_PER_DIR == 0 and i > 0:
+                    base_part = f"part{base_idx + i // MAX_FILES_PER_DIR}"
+                    shard = sync_dir / base_part
+                    shard.mkdir(parents=True, exist_ok=True)
+                dst = shard / p.name
                 if dst.exists():
                     dst.unlink()
                 os.link(p, dst)  # hardlink: same FS, zero copy
@@ -315,17 +430,17 @@ def upload_worker(worker: int, done: set[str], results: list, stop: threading.Ev
                 continue
         if not linked:
             continue
-        print(f"[u{worker}]   ⤒ syncing {n} files ({total_mb:.1f} MB) → {DATASET_REPO}:data/ (batched)", flush=True)
+        print(f"[u{worker}]   ⤒ syncing {n} files ({total_mb:.1f} MB) → {DATASET_REPO}:data/{base_part}+ (batched)", flush=True)
         try:
             up = subprocess.run(
                 ["hf", "upload", DATASET_REPO, str(sync_dir), "data", "--repo-type", "dataset"],
-                capture_output=True, text=True, timeout=900,
+                capture_output=True, text=True, timeout=1200,
             )
         except subprocess.TimeoutExpired:
             print(f"[u{worker}]   ↻ sync timeout — will retry next cycle", flush=True)
             continue
         if up.returncode != 0:
-            print(f"[u{worker}]   ↻ sync failed: {up.stderr[:150]} — retry next cycle", flush=True)
+            print(f"[u{worker}]   ↻ sync failed: {up.stderr[:200]} — retry next cycle", flush=True)
             time.sleep(60)  # HF rate-limit backoff between sync attempts
             continue
         # success: mark every staged file as done and remove it
@@ -336,6 +451,11 @@ def upload_worker(worker: int, done: set[str], results: list, stop: threading.Ev
                 p.unlink(missing_ok=True)
             except OSError:
                 pass
+        # track local part fullness for the next cycles' shard rollover
+        part_count += n
+        if part_count >= MAX_FILES_PER_DIR:
+            base_part = f"part{int(base_part[4:]) + 1}"
+            part_count = 0
         # clear the sync dir (the links point at the now-deleted files anyway)
         for d in linked:
             try:
@@ -344,7 +464,7 @@ def upload_worker(worker: int, done: set[str], results: list, stop: threading.Ev
                 pass
         save_done(done)
         results.append({"name": f"batch-{int(last_sync)}", "status": "ok", "mb": total_mb, "n": n})
-        print(f"[u{worker}]   ✓ synced {n} files ({total_mb:.1f} MB)", flush=True)
+        print(f"[u{worker}]   ✓ synced {n} files ({total_mb:.1f} MB) → data/{base_part}", flush=True)
 
 
 def main() -> None:
