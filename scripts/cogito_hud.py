@@ -17,6 +17,8 @@ import sys
 
 PART0_LOG = "/tmp/sentinel-scan-part0-v4.log"
 FLAT_LOG = "/tmp/sentinel-scan-flat-v4.log"
+PART0_JSON = "/tmp/sentinel-scan-part0.json"
+FLAT_JSON = "/tmp/sentinel-scan-flat.json"
 PART1_JSON = "/tmp/sentinel-scan-part1.json"
 BAR_W = 32
 
@@ -32,11 +34,11 @@ def parse_log(path: str):
     return None
 
 
-def parse_json(path: str):
+def parse_json(path: str, total_files: int):
     if not os.path.exists(path):
         return None
     d = json.load(open(path))
-    return {"done": 1878, "total": 1878,
+    return {"done": total_files, "total": total_files,
             "hit": len(d.get("per_repo", {})), "secs": 0,
             "phones": d["total"].get("[PHONE]", 0),
             "emails": d["total"].get("[EMAIL]", 0),
@@ -70,9 +72,9 @@ def row(name: str, d: dict, extra: str = "") -> str:
 
 
 def main() -> None:
-    p0 = parse_log(PART0_LOG)
-    fl = parse_log(FLAT_LOG)
-    p1 = parse_json(PART1_JSON)
+    p0 = parse_json(PART0_JSON, 9991) or parse_log(PART0_LOG)
+    fl = parse_json(FLAT_JSON, 9988) or parse_log(FLAT_LOG)
+    p1 = parse_json(PART1_JSON, 1878)
 
     parts = [p for p in (p0, fl, p1) if p]
     tot_done = sum(p["done"] for p in parts)
