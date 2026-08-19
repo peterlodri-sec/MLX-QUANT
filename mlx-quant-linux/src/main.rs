@@ -1,33 +1,42 @@
 pub mod allocator;
 pub mod tensor;
+pub mod agx_doorbell;
+pub mod polar_queue;
 
 use allocator::BumpAllocator;
 use tensor::{Tensor, DType};
+use polar_queue::PolarQueue;
 use std::time::Instant;
 
 fn main() {
-    println!("--- MLX-QUANT Tensor Caching ---");
-    println!("Target Host: Apple Silicon (M1 Pro) Bare-Metal Mode\n");
+    println!("--- MLX-QUANT: The Polar Galaxy Merge ---");
+    println!("Target Host: Apple Silicon (M1 Pro) Bare-Metal AGX\n");
 
     let allocator = BumpAllocator::new();
+    let mut galaxy = PolarQueue::new(&allocator);
 
-    println!("[*] Allocating Base KV Cache Tensor (1024 x 1024)...");
+    // 1. Setup the Async Data Streams (Spiral Arms)
+    galaxy.attach_arm("FP32_Weight_Stream");
+    galaxy.attach_arm("INT4_Quantized_Activation_Stream");
+    println!("[*] Attached 2 Spiral Arms to the Compute Core.");
+
     let start = Instant::now();
-    {
-        let kv = Tensor::new(vec![1024, 1024], DType::Float16, &allocator);
-        println!("[+] Initial Bump Allocation: {:?}", start.elapsed());
-        println!("[+] Tensor dropped, pushed to append-only cache.");
-    } // `kv` drops here, pushing its 2MB block to the cache!
 
-    println!("\n[*] Requesting 10,000 identical KV Tensors in a loop...");
-    let loop_start = Instant::now();
-    for _ in 0..10_000 {
-        // Because the block is in the cache, this is an instant O(1) pointer pop!
-        // It never even touches the bump pointer or wastes memory.
-        let _reused = Tensor::new(vec![1024, 1024], DType::Float16, &allocator);
-    }
-    let loop_time = loop_start.elapsed();
+    // 2. Feed the spiral arms from our O(1) cache / allocator
+    let weights = Tensor::new(vec![4096, 4096], DType::Float32, &allocator);
+    let activations = Tensor::new(vec![4096, 4096], DType::Quantized4Bit, &allocator);
     
-    println!("[+] Time for 10,000 cached tensor allocations: {:?}", loop_time);
-    println!("[+] Average allocation latency: {:?}", loop_time / 10_000);
+    galaxy.feed_tensor(0, weights);
+    galaxy.feed_tensor(1, activations);
+
+    println!("[*] Data streaming down the arms...");
+
+    // 3. The Collapse (Execution)
+    galaxy.collapse_and_execute(1);
+
+    let duration = start.elapsed();
+    
+    println!("\n[+] Singularity Reached! Hardware Doorbell Rung.");
+    println!("[+] Total queue latency (Alloc -> Stream -> Doorbell): {:?}", duration);
+    println!("\nThe AGX GPU is now computing 16.7M parameters asynchronously.");
 }
