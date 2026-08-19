@@ -4,8 +4,8 @@ set -e
 echo "🌌 MLX-QUANT: Galvanizing TPU Expansion Sequence..."
 
 # 1. Provision the Colab VM
-echo "[*] Provisioning TPU v2-8 from Google Colab Backend..."
-colab new -s galactic_tpu --tpu v2-8
+echo "[*] Provisioning T4 GPU from Google Colab Backend..."
+colab new -s galactic_tpu --gpu T4
 
 # 2. Mount Google Drive for persistent weights
 echo "[*] Engaging I/O Blackhole: Mounting Google Drive..."
