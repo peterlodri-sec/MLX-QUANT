@@ -304,16 +304,17 @@ MAX_FILES_PER_DIR = 7500  # under HF's 10k/dir limit, leaving headroom
 
 def hf_part_usage() -> dict[str, int]:
     """Probe the HF dataset repo for existing data/part<N>/ dirs and their
-    file counts. Paginating the FULL count is wasteful (part0 already holds
-    ~342k files = 342 API pages), so we read the first page only and use
-    HF's `hasMore` flag: if there are MORE files than a page (1000), the
-    part is beyond MAX_FILES_PER_DIR (7500) anyway → mark it full.
+    file counts. IMPORTANT: the HF tree API paginates with CURSORS, not
+    offset — an offset-based loop re-reads page 0 forever and grossly
+    overcounts (part0 measured at 342k via offset; cursor says 9,991).
+    We read the first page only: if it returns a full page (1000 entries),
+    the part is beyond MAX_FILES_PER_DIR (7500) anyway → mark it full.
     Returns {part_name: file_count_or_full}."""
     usage: dict[str, int] = {}
     for idx in range(0, 60):  # up to part59
         name = f"part{idx}"
         url = (f"https://huggingface.co/api/datasets/{DATASET_REPO}"
-               f"/tree/main/data/{name}?limit=1000&offset=0")
+               f"/tree/main/data/{name}?limit=1000")
         try:
             out = subprocess.run(
                 ["curl", "-s", "--max-time", "10", url],
