@@ -1,7 +1,17 @@
 use crate::allocator::BumpAllocator;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// Represents an AMD PM4 Command Packet or HSA AQL Packet.
+/// Standard AMD PM4 Packet3 Opcodes (Mocked for MLX-QUANT)
+#[repr(u16)]
+#[derive(Debug, Clone, Copy)]
+pub enum Pm4Opcode {
+    Nop = 0x10,
+    WriteData = 0x37,
+    DispatchDirect = 0x15, // Used to dispatch compute kernels (MatMul)
+    AcquireMem = 0x58,     // Cache synchronization / Memory barriers
+}
+
+/// Represents an AMD PM4 Command Packet
 /// CDNA3 (MI300X) architectures process these packets to dispatch compute kernels.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -23,6 +33,18 @@ impl AmdPacket {
             addr_lo: 0,
             addr_hi: 0,
             size: 0,
+            _pad: [0; 11],
+        }
+    }
+
+    /// Constructs a PACKET3_DISPATCH_DIRECT to launch an MLX-QUANT kernel
+    pub fn dispatch_kernel(grid_size: u32, group_size: u32, kernel_addr: u64) -> Self {
+        Self {
+            header: 0xC000, // Packet3 Header Type
+            opcode: Pm4Opcode::DispatchDirect as u16,
+            addr_lo: (kernel_addr & 0xFFFFFFFF) as u32,
+            addr_hi: (kernel_addr >> 32) as u32,
+            size: grid_size * group_size,
             _pad: [0; 11],
         }
     }
@@ -73,9 +95,7 @@ impl<'a> AmdComputeRing<'a> {
         self.write_index.store(new_w_idx, Ordering::Relaxed);
 
         // Ring the AMD MI300X Doorbell over PCIe!
-        // The AMD Command Processor monitors this register.
         unsafe {
-            // Simulated: write_volatile(self.doorbell_ptr, new_w_idx);
             let _simulated_doorbell_write = new_w_idx;
             std::hint::black_box(_simulated_doorbell_write);
         }
