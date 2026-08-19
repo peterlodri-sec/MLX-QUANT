@@ -42,25 +42,31 @@ Zero-copy DMA. We bypass the CPU completely by `mmap`-ing NVMe SSD storage direc
 ### 9. Redshifting (Dynamic Precision Downcasting)
 Tensors redshift into lower precisions (FP16 -> INT8 -> INT4) in transit to save extreme amounts of bandwidth.
 
-### 10. Wormholes & Quantum Entanglement
+### 10. Antigravity (Weightless Tensor Levitation)
+We defy the gravitational pull of slow memory (RAM/Disk) by aggressively levitating tensors into the ultra-fast L1/L2 SRAM cache using `prfm` (Prefetch Memory) instructions before they are even needed.
+
+### 11. Wormholes & Quantum Entanglement
 We use Peer-to-Peer (P2P) DMA to bypass the PCIe root complex. Through Quantum Entanglement, modifying a tensor locally triggers a hardware-level RDMA network packet that instantly updates the remote AMD GPU cluster.
 
-### 11. Gravitational Lensing & Time Dilation
+### 12. Gravitational Lensing & Time Dilation
 We use Speculative Decoding to compute 5 future tokens simultaneously (Lensing), executing infinitely inside dilated time asynchronous micro-batches.
 
-### 12. Dark Energy (Accelerating Entropy)
+### 13. Dark Energy (Accelerating Entropy)
 If the model gets stuck in a repetitive loop (gravity taking over), Dark Energy dynamically scales the generation temperature (entropy) to force creative expansion.
 
-### 13. The 4D Polar Galaxy Queue & Compute Singularity
+### 14. The 4D Polar Galaxy Queue & Compute Singularity
 Multiple asynchronous spiral arms (Weights, Activations) continuously merge into an accretion disk ALU compute singularity. We execute pure AArch64 inline assembly for INT4 unpacking and NEON math.
 
-### 14. White Holes (Infinite Token Ejection)
+### 15. Fusion-Polarity (Kernel Fusion)
+Forcing opposite polarities (Weights and Activations) together under immense pressure. We fuse multiple distinct operations into a single atomic hardware action, eliminating all intermediate memory read/writes.
+
+### 16. White Holes (Infinite Token Ejection)
 A black hole consumes, a white hole endless ejects. We open an ejection port, uncapping sequence lengths for infinite, autonomous logical Chain-of-Thought generation.
 
-### 15. The Quasar (RDMA Output Jets)
+### 17. The Quasar (RDMA Output Jets)
 The Singularity blasts output tokens through a high-speed network socket via RDMA without touching the CPU.
 
-### 16. Hawking Radiation (Thermal Cache Eviction)
+### 18. Hawking Radiation (Thermal Cache Eviction)
 A background thread slowly "evaporates" cold, unused memory pages back to the OS using `madvise` to prevent OOM collapses.
 
 ---
