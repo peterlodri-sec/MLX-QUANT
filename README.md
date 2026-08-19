@@ -150,4 +150,19 @@ Run it effortlessly with `uv`:
 uv run scripts/mlx_bench_matrix_yall.py
 ```
 
+
+---
+
+## 🙏 Acknowledgements & Support
+This astrophysical architecture would not exist without the relentless open-weight contributions of the global AI community. We specifically want to emphasize and acknowledge:
+
+- **[QWEN](https://qwenlm.github.io/) (Alibaba Cloud)** – For their phenomenal model architecture and continuously pushing the boundaries of what open intelligence can achieve.
+- **[DeepSeek](https://v2.deepseek.com/)** – For pioneering highly efficient MoE (Mixture-of-Experts) architectures that heavily inspired our *Dark Matter & Asteroid Belt* sparse zero-paging structures.
+
+### 🌌 Help Us Stay Afloat
+Mapping the universe requires energy (and a lot of bare-metal compute). If this framework helped you bypass the OS and touch the silicon, consider supporting the research to keep the ship flying:
+- **[GitHub Sponsors](https://github.com/sponsors/peterlodri-sec)**
+- **[Support on Ko-fi](https://ko-fi.com/peterlodri)**
+- **Star this repository** and share it with a fellow astronaut.
+
 *Let's build the universe.*
