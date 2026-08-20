@@ -58,6 +58,10 @@ SKIP_BIN_EXT = {
     ".woff", ".ttf", ".otf", ".eot", ".ico", ".mp4", ".mov", ".avi",
     ".pkl", ".npy", ".npz", ".h5", ".parquet", ".ipynb",
 }
+# ── per-repo gate state (populated via --old-counts CLI arg) ───────────────────
+GATE_OLD_COUNTS: dict[str, int] = {}
+GATE_HELD_LIST: list[dict] = []
+# ---------------------------------------------------------------------------
 
 
 def gh_api(url: str) -> list:
@@ -203,6 +207,11 @@ def scrub_text(text: str, rel: str = "") -> str:
     return text
 
 
+def count_phone_sentinels(text: str) -> int:
+    """Count [PHONE] sentinel occurrences in text (same pattern as scrubbed output)."""
+    return len(re.findall(r"\[PHONE\]", text))
+
+
 def disk_free_gb() -> float:
     out = subprocess.run(["df", "-k", "/"], capture_output=True, text=True)
     try:
@@ -269,6 +278,30 @@ def process_repo(repo: dict, worker: int, done: set[str]) -> dict | None:
             if len(text) < 40:
                 continue
             text = scrub_text(text, rel)  # PII + secret redaction before the corpus
+            new_phone = count_phone_sentinels(text)  # fixed scrubber count
+            old_phone = GATE_OLD_COUNTS.get(name, None)  # old count from shipped corpus
+            if old_phone is not None and new_phone > old_phone:
+                # Gate: new redactions would exceed old — hold this repo for review
+                GATE_HELD_LIST.append({
+                    "repo": name,
+                    "old_phone": old_phone,
+                    "new_phone": new_phone,
+                    "reason": "new scrubber adds more PHONE sentinels than old removed",
+                })
+                print(f"[w{worker}] ↻ {name}: gate held — old {old_phone} → new {new_phone} "
+                      f"(new > old, re-emit blocked)", flush=True)
+                # remove clone and return gate-held result; uploader will skip
+                subprocess.run(["rm", "-rf", str(clone_dir)], capture_output=True)
+                if rows == 0:
+                    out_jsonl.unlink(missing_ok=True)
+                    print(f"[w{worker}]   ∅ {name}: no text content (gate-held)", flush=True)
+                    return {"name": name, "status": "no-text", "gate_held": True}
+                # still queue the JSONL but mark it gate-held; uploader will check gate
+                upload_queue.put(out_jsonl)
+                print(f"[w{worker}]   → {name}: {rows} rows, {chars/1e6:.1f} MB text queued for upload "
+                      f"(queue depth {upload_queue.qsize()}) [GATE-HELD]", flush=True)
+                return {"name": name, "status": "extracted", "rows": rows, "chars": chars,
+                        "gate_held": True, "old_phone": old_phone, "new_phone": new_phone}
             files += 1
             chars += len(text)
             rows += 1
