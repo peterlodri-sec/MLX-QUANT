@@ -79,3 +79,7 @@ uv.lock
 .cache/
 # vim
 *.swp
+
+# Rust build output
+mlx-quant-linux/target/
+**/target/

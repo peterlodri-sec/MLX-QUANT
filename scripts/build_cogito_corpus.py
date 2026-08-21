@@ -212,6 +212,51 @@ def count_phone_sentinels(text: str) -> int:
     return len(re.findall(r"\[PHONE\]", text))
 
 
+# ── structural-data classifier (per the audit's final spec) ────────────────
+# The unit of exemption is the COLUMN, not the file: a file is structural
+# (no PII to protect) only when every column parses numeric. A file with any
+# text column (dataset_3090.csv: 11 of 20 free-text) gets scrubbed as text.
+# The classifier TAGS review priority; the gate remains the actual protection.
+
+
+def parse_numeric(tok: str) -> bool:
+    """True for any float-parseable token, including nan/inf — bright_viridis.py
+    does `from numpy import nan, inf` and float("nan") parses."""
+    t = tok.strip()
+    if t.lower() in ("nan", "inf", "-inf", "+inf"):
+        return True
+    try:
+        float(t)
+        return True
+    except ValueError:
+        return False
+
+
+def column_is_numeric(col_vals: list[str]) -> bool:
+    """A column is numeric when >=99% of values parse AND it holds more than
+    two distinct values — a pure 0/1 column (AoC puzzle input) is one bit of
+    information, not a real number column."""
+    if not col_vals:
+        return False
+    ok = sum(1 for v in col_vals if parse_numeric(v))
+    distinct = {v.strip() for v in col_vals}
+    return ok / len(col_vals) >= 0.99 and len(distinct) > 2
+
+
+def file_is_structural(rows: str, delimiter=",") -> bool:
+    """A file is structural only when EVERY column is numeric. CSV fields
+    must be split on the delimiter (whitespace-split never sees a field)."""
+    lines = rows.splitlines()
+    if not lines:
+        return False
+    width = max(len(r.split(delimiter)) for r in lines)
+    cols = [
+        [r.split(delimiter)[c] for r in lines if len(r.split(delimiter)) > c]
+        for c in range(width)
+    ]
+    return all(column_is_numeric(c) for c in cols if c)
+
+
 def disk_free_gb() -> float:
     out = subprocess.run(["df", "-k", "/"], capture_output=True, text=True)
     try:
@@ -277,16 +322,23 @@ def process_repo(repo: dict, worker: int, done: set[str]) -> dict | None:
                 continue
             if len(text) < 40:
                 continue
+            raw = text
             text = scrub_text(text, rel)  # PII + secret redaction before the corpus
             new_phone = count_phone_sentinels(text)  # fixed scrubber count
             old_phone = GATE_OLD_COUNTS.get(name, None)  # old count from shipped corpus
             if old_phone is not None and new_phone > old_phone:
-                # Gate: new redactions would exceed old — hold this repo for review
+                # Gate: new redactions would exceed old — hold this repo for review.
+                # The classifier tags the held file: structural-data files (every
+                # column numeric) are likely safe to leave; ambiguous files need
+                # a human. The gate decides; the classifier only triages.
+                struct = file_is_structural(raw)
                 GATE_HELD_LIST.append({
                     "repo": name,
                     "old_phone": old_phone,
                     "new_phone": new_phone,
-                    "reason": "new scrubber adds more PHONE sentinels than old removed",
+                    "classification": "structural-data" if struct else "ambiguous",
+                    "reason": ("new scrubber adds more PHONE sentinels than old removed"
+                               + (" (file is structural data — likely safe to leave)" if struct else " (needs manual review)")),
                 })
                 print(f"[w{worker}] ↻ {name}: gate held — old {old_phone} → new {new_phone} "
                       f"(new > old, re-emit blocked)", flush=True)
