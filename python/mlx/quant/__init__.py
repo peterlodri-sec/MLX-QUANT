@@ -15,11 +15,29 @@ from .bitnet import (
 )
 from .microstructure import simulate_l2_orderbook, vpin_toxicity
 from .portfolio import markowitz_efficient_frontier
+from .probes import (
+    CorticalLogMapTelemetry,
+    DestructiveChannelMetrics,
+    HolographicDestructiveProbe,
+    compute_snr_db,
+    quantize_to_regime,
+)
+from .shm_ring import RingRecord, SharedMemoryRingBuffer
 from .stochastic import black_scholes_greeks, simulate_gbm
+from .stigmergy import StigmergicAccumulator, StigmergySnapshot
 
 __all__ = [
     "ArmillarySphereLinear",
     "armillary_sparse_update_metal",
+    "StigmergicAccumulator",
+    "StigmergySnapshot",
+    "SharedMemoryRingBuffer",
+    "RingRecord",
+    "HolographicDestructiveProbe",
+    "CorticalLogMapTelemetry",
+    "DestructiveChannelMetrics",
+    "compute_snr_db",
+    "quantize_to_regime",
     "simulate_gbm",
     "black_scholes_greeks",
     "simulate_l2_orderbook",
@@ -31,4 +49,5 @@ __all__ = [
     "unpack_ternary_numpy",
     "matmul_ternary_cpu_fallback",
 ]
+
 
